@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Album</title>
+</head>
+<body>
+  <h1>Edit Album</h1>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul>
+        {% for category, message in messages %}
+          <li class="{{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+  <form action="{{ url_for('edit_album', album_id=album['id']) }}" method="post">
+    <p>
+      Title:<br>
+      <input type="text" name="title" value="{{ album['title'] }}" required>
+    </p>
+    <p>
+      Artist:<br>
+      <input type="text" name="artist" value="{{ album['artist'] }}" required>
+    </p>
+    <p>
+      Year:<br>
+      <input type="text" name="year" value="{{ album['year'] }}">
+    </p>
+    <p>
+      Genre:<br>
+      <input type="text" name="genre" value="{{ album['genre'] }}">
+    </p>
+    <input type="submit" value="Update Album"><a href="{{ url_for('index') }}">Home</a>
+  </form>
+
+</body>
+</html>

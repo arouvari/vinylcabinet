@@ -113,3 +113,44 @@ def delete_album(album_id):
     db.execute("DELETE FROM albums WHERE id = ?", (album_id,))
     flash("Album deleted successfully", "success")
     return redirect("/")
+
+@app.route("/edit/<int:album_id>")
+def edit_album(album_id):
+    if "username" not in session:
+        flash("You must be logged in to edit albums", "error")
+        return redirect("/login")
+
+    album = db.query("SELECT * FROM albums WHERE id = ?", (album_id,))
+    if not album:
+        flash("Album not found", "error")
+        return redirect("/")
+
+    album = album[0]
+    if album["user_id"] != session["user_id"]:
+        flash("You cannot edit this album", "error")
+        return redirect("/")
+
+    return render_template("edit.html", album=album)
+
+@app.route("/edit/<int:album_id>", methods=["POST"])
+def edit_album_post(album_id):
+    if "username" not in session:
+        flash("You must be logged in to edit albums", "error")
+        return redirect("/login")
+
+    title = request.form["title"]
+    artist = request.form["artist"]
+    year = request.form["year"]
+    genre = request.form["genre"]
+
+    if not title or not artist:
+        flash("Title and artist are required", "error")
+        return redirect(f"/edit/{album_id}")
+    if year and not year.isdigit():
+        flash("Year must be a number", "error")
+        return redirect(f"/edit/{album_id}")
+
+    db.execute("UPDATE albums SET title = ?, artist = ?, year = ?, genre = ? WHERE id = ?",
+               (title, artist, year, genre, album_id))
+    flash("Album updated successfully", "success")
+    return redirect("/")
