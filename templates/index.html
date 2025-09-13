@@ -7,7 +7,15 @@
 
 <body>
   <h1>Vinylcabinet</h1>
-  <a href="add">Add vinyl</a>
+  {% for album in albums %}
+  <p>
+    <strong>{{ album["title"] }}</strong> - {{ album["artist"]}} ({{ album["year"] }}, {{ album["genre"] }})
+  </p>
+  {% endfor %}
+  <p>
+    <a href="add">Add vinyl</a>
+  </p>
+
 </body>
 
 </html>
