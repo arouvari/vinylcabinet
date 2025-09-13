@@ -14,6 +14,9 @@ def index():
 
 @app.route("/add")
 def add():
+    if "username" not in session:
+        flash("You must be logged in to add albums", "error")
+        return redirect("/login")
     return render_template("add.html")
 
 @app.route("/result", methods=["POST"])
@@ -27,13 +30,12 @@ def result():
     genre = request.form["genre"]
     user_id=session["user_id"]
 
-    if "username" not in session:
-        return redirect("/login")
     if not title or not artist:
         flash("Title and artist are required", "error")
         return redirect("/add")
     if year and not year.isdigit():
         flash("Year must be a number", "error")
+        return redirect("/add")
 
     db.execute("INSERT INTO albums (title, artist, year, genre, user_id) VALUES (?, ?, ?, ?, ?)", (title, artist, year, genre, user_id))
     flash(f"Album '{title}' added!", "success")
@@ -71,7 +73,7 @@ def login_post():
     username = request.form["username"]
     password = request.form["password"]
 
-    result = db.query("SELECT password_hash FROM users WHERE username = ?", (username,))
+    result = db.query("SELECT id, password_hash FROM users WHERE username = ?", (username,))
     if not result:
         flash("Wrong username or password", "error")
         return redirect("/login")
@@ -90,4 +92,6 @@ def login_post():
 @app.route("/logout")
 def logout():
     session.pop("username", None)
+    session.pop("user_id", None)
+    flash("Logged out successfully", "success")
     return redirect("/")
