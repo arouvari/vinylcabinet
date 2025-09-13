@@ -9,7 +9,7 @@ app.secret_key = config.secret_key
 
 @app.route("/")
 def index():
-    albums = db.query("SELECT title, artist, year, genre FROM albums")
+    albums = db.query("SELECT id, title, artist, year, genre, user_id FROM albums")
     return render_template("index.html", albums=albums)
 
 @app.route("/add")
@@ -94,4 +94,22 @@ def logout():
     session.pop("username", None)
     session.pop("user_id", None)
     flash("Logged out successfully", "success")
+    return redirect("/")
+
+@app.route("/delete/<int:album_id>", methods=["POST"])
+def delete_album(album_id):
+    if "username" not in session:
+        flash("You must be logged in to delete albums", "error")
+        return redirect("/login")
+
+    album = db.query("SELECT user_id FROM albums WHERE id = ?", (album_id,))
+    if not album:
+        flash("Album not found", "error")
+        return redirect("/")
+    if album[0]["user_id"] != session["user_id"]:
+        flash("You are not allowed to delete this album", "error")
+        return redirect("/")
+
+    db.execute("DELETE FROM albums WHERE id = ?", (album_id,))
+    flash("Album deleted successfully", "success")
     return redirect("/")

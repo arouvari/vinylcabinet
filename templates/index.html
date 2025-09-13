@@ -19,18 +19,23 @@
   {% for album in albums %}
   <p>
     <strong>{{ album["title"] }}</strong> - {{ album["artist"]}} ({{ album["year"] }}, {{ album["genre"] }})
+    {% if session.username and album["user_id"] == session.user_id %}
+      <form action="{{ url_for('delete_album', album_id=album['id']) }}" method="post" style="display:inline;">
+        <button type="submit">Delete</button>
+      </form>
+    {% endif %}
   </p>
   {% endfor %}
   <p>
     {% if session.username %}
-    <a href="add">Add vinyl</a>
+    <a href="{{ url_for('add') }}">Add</a>
     {% endif %}
     {% if not session.username %}
-    <a href="login">Login</a>
+    <a href="{{ url_for('login') }}">Login</a>
     {% endif %}
-    <a href="register">Register</a>
+    <a href="{{ url_for('register') }}">Register</a>
     {% if session.username %}
-    <a href="logout">Logout</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
     {% endif %}
   </p>
 
