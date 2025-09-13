@@ -1,9 +1,11 @@
-from flask import Flask, render_template, request, redirect
-from werkzeug.security import generate_password_hash
+from flask import Flask, render_template, request, redirect, session
+from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+import config
 import db
 
 app = Flask(__name__)
+app.secret_key = config.secret_key
 
 @app.route("/")
 def index():
@@ -12,6 +14,8 @@ def index():
 
 @app.route("/add")
 def add():
+    if "username" not in session:
+        return redirect("/login")
     return render_template("add.html")
 
 @app.route("/result", methods=["POST"])
@@ -41,4 +45,29 @@ def create():
     except sqlite3.IntegrityError:
         return "error: Username taken"
 
+    return redirect("/")
+
+@app.route("/login")
+def login():
+    return render_template("login.html")
+
+@app.route("/insert", methods=["POST"])
+def insert():
+    username = request.form["username"]
+    password = request.form["password"]
+
+    result = db.query("SELECT password_hash FROM users WHERE username = ?", (username,))
+    if not result:
+        return "error: Wrong username or password"
+    password_hash = result[0]["password_hash"]
+
+    if check_password_hash(password_hash, password):
+        session["username"] = username
+        return redirect("/")
+    else:
+        return "error: Wrong username or password"
+
+@app.route("/logout")
+def logout():
+    del session["username"]
     return redirect("/")

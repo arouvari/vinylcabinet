@@ -13,7 +13,16 @@
   </p>
   {% endfor %}
   <p>
-    <a href="add">Add vinyl</a> <a href="register">Register</a>
+    {% if session.username %}
+    <a href="add">Add vinyl</a>
+    {% endif %}
+    {% if not session.username %}
+    <a href="login">Login</a>
+    {% endif %}
+    <a href="register">Register</a>
+    {% if session.username %}
+    <a href="logout">Logout</a>
+    {% endif %}
   </p>
 
 </body>
