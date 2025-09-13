@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash, get_flashed_messages
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import config
@@ -20,54 +20,63 @@ def add():
 
 @app.route("/result", methods=["POST"])
 def result():
+    if "username" not in session:
+        return redirect("/login")
     title = request.form["title"]
     artist = request.form["artist"]
     year = request.form["year"]
     genre = request.form["genre"]
     db.execute("INSERT INTO albums (title, artist, year, genre) VALUES (?, ?, ?, ?)", (title, artist, year, genre))
-    return render_template("result.html", title=title, artist=artist, year=year, genre=genre)
+    flash(f"Album '{title}' added!", "success")
+    return redirect("/")
 
 @app.route("/register")
 def register():
     return render_template("register.html")
 
-@app.route("/create", methods=["POST"])
-def create():
+@app.route("/register", methods=["POST"])
+def register_post():
     username = request.form["username"]
     password1 = request.form["password1"]
     password2 = request.form["password2"]
     if password1 != password2:
-        return "error: Passwords don't match"
+        flash("Passwords don't match", "error")
+        return redirect("/register")
     password_hash = generate_password_hash(password1)
 
     try:
         db.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, password_hash))
     except sqlite3.IntegrityError:
-        return "error: Username taken"
+        flash("Username taken", "error")
+        return redirect("/register")
 
-    return redirect("/")
+    flash("Account registered", "success")
+    return redirect("/login")
 
 @app.route("/login")
 def login():
     return render_template("login.html")
 
-@app.route("/insert", methods=["POST"])
-def insert():
+@app.route("/login", methods=["POST"])
+def login_post():
     username = request.form["username"]
     password = request.form["password"]
 
     result = db.query("SELECT password_hash FROM users WHERE username = ?", (username,))
     if not result:
-        return "error: Wrong username or password"
+        flash("Wrong username or password", "error")
+        return redirect("/login")
     password_hash = result[0]["password_hash"]
 
     if check_password_hash(password_hash, password):
         session["username"] = username
+        flash("Logged in successfully", "success")
         return redirect("/")
     else:
-        return "error: Wrong username or password"
+        flash("Wrong username or password", "error")
+        return redirect("/login")
 
 @app.route("/logout")
 def logout():
-    del session["username"]
+    session.pop("username", None)
     return redirect("/")
