@@ -13,12 +13,12 @@ def index():
 
     if query:
         albums = db.query("""
-            SELECT id, title, artist, year, genre, user_id
+            SELECT id, title, artist, year, genre, user_id, image_url
             FROM albums
             WHERE title LIKE ? OR artist LIKE ? OR year LIKE ? OR genre LIKE ?
         """, (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%"))
     else:
-        albums = db.query("SELECT id, title, artist, year, genre, user_id FROM albums")
+        albums = db.query("SELECT id, title, artist, year, genre, user_id, image_url FROM albums")
     return render_template("index.html", albums=albums, query=query)
 
 @app.route("/add")
@@ -38,6 +38,7 @@ def result():
     year = request.form["year"]
     genre = request.form["genre"]
     user_id=session["user_id"]
+    image_url = request.form.get("image_url")
 
     if not title or not artist:
         flash("Title and artist are required", "error")
@@ -46,7 +47,7 @@ def result():
         flash("Year must be a number", "error")
         return redirect("/add")
 
-    db.execute("INSERT INTO albums (title, artist, year, genre, user_id) VALUES (?, ?, ?, ?, ?)", (title, artist, year, genre, user_id))
+    db.execute("INSERT INTO albums (title, artist, year, genre, user_id, image_url) VALUES (?, ?, ?, ?, ?, ?)", (title, artist, year, genre, user_id, image_url))
     flash(f"Album '{title}' added!", "success")
     return redirect("/")
 
@@ -151,6 +152,7 @@ def edit_album_post(album_id):
     artist = request.form["artist"]
     year = request.form["year"]
     genre = request.form["genre"]
+    image_url = request.form["image_url"]
 
     if not title or not artist:
         flash("Title and artist are required", "error")
@@ -159,7 +161,7 @@ def edit_album_post(album_id):
         flash("Year must be a number", "error")
         return redirect(f"/edit/{album_id}")
 
-    db.execute("UPDATE albums SET title = ?, artist = ?, year = ?, genre = ? WHERE id = ?",
-               (title, artist, year, genre, album_id))
+    db.execute("UPDATE albums SET title = ?, artist = ?, year = ?, genre = ?, image_url = ? WHERE id = ?",
+               (title, artist, year, genre, image_url, album_id))
     flash("Album updated successfully", "success")
     return redirect("/")

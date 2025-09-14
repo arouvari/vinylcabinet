@@ -23,6 +23,7 @@
   {% if albums %}
     {% for album in albums %}
     <p>
+      <img src="{{ album['image_url'] or 'static/placeholder.jpg'}}" alt="Album cover" width="150"><br>
       <strong>{{ album["title"] }}</strong> - {{ album["artist"]}} ({{ album["year"] }}, {{ album["genre"] }})
       {% if session.username and album["user_id"] == session.user_id %}
         <form action="{{ url_for('delete_album', album_id=album['id']) }}" method="post" style="display:inline;">

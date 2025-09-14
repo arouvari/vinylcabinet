@@ -31,6 +31,10 @@
       Genre:<br>
       <input type="text" name="genre" value="{{ album['genre'] }}">
     </p>
+    <p>
+      Image_url:<br>
+      <input type="text" name="image_url" value="{{ album['image_url'] or '' }}">
+    </p>
     <input type="submit" value="Update Album"><a href="{{ url_for('index') }}">Home</a>
   </form>
 
