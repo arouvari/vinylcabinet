@@ -7,10 +7,19 @@ import db
 app = Flask(__name__)
 app.secret_key = config.secret_key
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
-    albums = db.query("SELECT id, title, artist, year, genre, user_id FROM albums")
-    return render_template("index.html", albums=albums)
+    query = request.args.get("query", "").strip()
+
+    if query:
+        albums = db.query("""
+            SELECT id, title, artist, year, genre, user_id
+            FROM albums
+            WHERE title LIKE ? OR artist LIKE ? OR year LIKE ? OR genre LIKE ?
+        """, (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%"))
+    else:
+        albums = db.query("SELECT id, title, artist, year, genre, user_id FROM albums")
+    return render_template("index.html", albums=albums, query=query)
 
 @app.route("/add")
 def add():
