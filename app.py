@@ -10,15 +10,34 @@ app.secret_key = config.secret_key
 @app.route("/", methods=["GET"])
 def index():
     query = request.args.get("query", "").strip()
+    user_id = session.get("user_id")
 
     if query:
-        albums = db.query("""
-            SELECT id, title, artist, year, genre, user_id, image_url
-            FROM albums
-            WHERE title LIKE ? OR artist LIKE ? OR year LIKE ? OR genre LIKE ?
-        """, (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%"))
+        if user_id:
+            albums = db.query("""
+                SELECT a.id, a.title, a.artist, a.year, a.genre, a.user_id, a.image_url,
+                EXISTS (SELECT 1 FROM favorites f
+                WHERE f.user_id = ? AND f.album_id = a.id)
+                AS is_favorite
+                FROM albums a
+                WHERE a.title LIKE ? OR a.artist LIKE ? OR a.year LIKE ? OR a.genre LIKE ?
+            """, (user_id, f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%"))
+        else:
+            albums = db.query("""
+                SELECT id, title, artist, year, genre, user_id, image_url
+                FROM albums
+                WHERE title LIKE ? OR artist LIKE ? OR year LIKE ? OR genre LIKE ?
+            """, (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%"))
     else:
-        albums = db.query("SELECT id, title, artist, year, genre, user_id, image_url FROM albums")
+        if user_id:
+            albums = db.query("""
+                            SELECT a.id, a.title, a.artist, a.year, a.genre, a.user_id, a.image_url,
+                            EXISTS (SELECT 1 FROM favorites f
+                            WHERE f.user_id = ? AND f.album_id = a.id)
+                            AS is_favorite
+                            FROM albums a""", (user_id,))
+        else:
+            albums = db.query("SELECT id, title, artist, year, genre, user_id, image_url FROM albums")
     return render_template("index.html", albums=albums, query=query)
 
 @app.route("/add")
@@ -164,4 +183,22 @@ def edit_album_post(album_id):
     db.execute("UPDATE albums SET title = ?, artist = ?, year = ?, genre = ?, image_url = ? WHERE id = ?",
                (title, artist, year, genre, image_url, album_id))
     flash("Album updated successfully", "success")
+    return redirect("/")
+
+@app.route("/favorite/<int:album_id>", methods=["POST"])
+def favorite(album_id):
+    if "user_id" not in session:
+        flash("You must be logged in to favorite albums", "error")
+        return redirect("/login")
+
+    user_id = session["user_id"]
+
+    existing = db.query("SELECT 1 FROM favorites WHERE user_id = ? AND album_id = ?", (user_id, album_id))
+    if existing:
+        db.execute("DELETE FROM favorites WHERE user_id = ? AND album_id = ?", (user_id, album_id))
+        flash("Album removed from favorites", "success")
+    else:
+        db.execute("INSERT INTO favorites (user_id, album_id) VALUES (?, ?)", (user_id, album_id))
+        flash("Album added to favorites", "success")
+
     return redirect("/")

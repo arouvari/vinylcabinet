@@ -32,6 +32,15 @@
         <a href="{{ url_for('edit_album', album_id=album['id']) }}">Edit</a>
       {% endif %}
     </p>
+      {% if session.username %}
+        <form action="{{ url_for('favorite', album_id=album['id']) }}" method="post" style="display:inline;">
+          {% if album["is_favorite"] %}
+            <button type="submit">★ Unfavorite</button>
+          {% else %}
+            <button type="submit">☆ Favorite</button>
+          {% endif %}
+        </form>
+      {% endif %}
     {% endfor %}
   {% else %}
     <p>No albums found</p>
