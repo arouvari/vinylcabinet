@@ -202,3 +202,26 @@ def favorite(album_id):
         flash("Album added to favorites", "success")
 
     return redirect("/")
+
+@app.route("/user/<username>")
+def user_page(username):
+    user = db.query("SELECT id FROM users WHERE username = ?", (username,))
+    if not user:
+        flash("User not found", "error")
+        return redirect("/")
+    profile_user_id = user[0]["id"]
+
+    albums = db.query("""
+        SELECT a.id, a.title, a.artist, a.year, a.genre, a.user_id, a.image_url
+        FROM albums a
+        JOIN favorites f ON a.id = f.album_id
+        WHERE f.user_id = ?
+                      """, (profile_user_id,))
+
+    current_user_id = session.get("user_id")
+    user_favorites = []
+    if current_user_id:
+        favorites = db.query("SELECT album_id FROM favorites WHERE user_id = ?", (current_user_id,))
+        user_favorites = [f["album_id"] for f in favorites]
+
+    return render_template("user.html", albums=albums, username=username, user_favorites=user_favorites)

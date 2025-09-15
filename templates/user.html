@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ username }} - VinylCabinet</title>
+</head>
+<body>
+  <h1>{{ username }}'s Favorite Cabinet</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <ul>
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  {% endwith %}
+
+  {% if albums %}
+    {% for album in albums %}
+      <p>
+        <img src="{{ album['image_url'] or 'static/placeholder.jpg'}}" alt="Album cover" width="150"><br>
+        <strong>{{ album['title'] }}</strong> - {{ album['artist'] }} ({{ album['year'] }}, {{ album['genre'] }})
+
+        {% if session.user_id %}
+            <form action="{{ url_for('favorite', album_id=album['id']) }}" method="post" style="display:inline;">
+                {% if album['id'] in user_favorites %}
+                    <button type="submit">★ Unfavorite</button>
+                {% else %}
+                     <button type="submit">☆ Favorite</button>
+        {% endif %}
+      </form>
+    {% endif %}
+    </p>
+    {% endfor %}
+  {% else %}
+    <p>No favorite albums yet.</p>
+  {% endif %}
+
+  <p>
+    <a href="{{ url_for('index') }}">Back to home</a>
+    {% if session.username %}
+      <a href="{{ url_for('logout') }}">Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">Login</a>
+    {% endif %}
+  </p>
+</body>
+</html>
