@@ -25,6 +25,12 @@
     <p>
       <img src="{{ album['image_url'] or 'static/placeholder.jpg'}}" alt="Album cover" width="150"><br>
       <strong>{{ album["title"] }}</strong> - {{ album["artist"]}} ({{ album["year"] }}, {{ album["genre"] }})
+      <a href="/album/{{ album['id'] }}">View Details</a>
+      {% if album['avg_stars'] %}
+      <p>
+      Average Rating: {{ '★' * album['avg_stars'] | int }}{{ '☆' * (5 - album['avg_stars'] | int) }}
+      </p>
+      {% endif %}
       {% if session.username and album["user_id"] == session.user_id %}
         <form action="{{ url_for('delete_album', album_id=album['id']) }}" method="post" style="display:inline;">
           <button type="submit">Delete</button>

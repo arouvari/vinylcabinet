@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, flash, get_flashed_messages
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 import sqlite3
 import config
 import db
@@ -17,14 +18,16 @@ def index():
             albums = db.query("""
                 SELECT a.id, a.title, a.artist, a.year, a.genre, a.user_id, a.image_url,
                 EXISTS (SELECT 1 FROM favorites f
-                WHERE f.user_id = ? AND f.album_id = a.id)
-                AS is_favorite
+                WHERE f.user_id = ? AND f.album_id = a.id),
+                AS is_favorite,
+                (SELECT AVG(r.stars) FROM reviews r WHERE r.album_id = a.id) AS avg_stars
                 FROM albums a
                 WHERE a.title LIKE ? OR a.artist LIKE ? OR a.year LIKE ? OR a.genre LIKE ?
             """, (user_id, f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%"))
         else:
             albums = db.query("""
-                SELECT id, title, artist, year, genre, user_id, image_url
+                SELECT id, title, artist, year, genre, user_id, image_url,
+                (SELECT AVG(r.stars) FROM reviews r WHERE r.album_id = albums.id) as avg_stars
                 FROM albums
                 WHERE title LIKE ? OR artist LIKE ? OR year LIKE ? OR genre LIKE ?
             """, (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%"))
@@ -34,10 +37,16 @@ def index():
                             SELECT a.id, a.title, a.artist, a.year, a.genre, a.user_id, a.image_url,
                             EXISTS (SELECT 1 FROM favorites f
                             WHERE f.user_id = ? AND f.album_id = a.id)
-                            AS is_favorite
+                            AS is_favorite,
+                            (SELECT AVG(r.stars) FROM reviews r WHERE r.album_id = a.id)
+                            AS avg_stars
                             FROM albums a""", (user_id,))
         else:
-            albums = db.query("SELECT id, title, artist, year, genre, user_id, image_url FROM albums")
+            albums = db.query("""SELECT id, title, artist, year, genre, user_id, image_url,
+                                (SELECT AVG(r.stars) FROM reviews r WHERE r.album_id = albums.id)
+                                AS avg_stars
+                                FROM albums
+                              """)
     return render_template("index.html", albums=albums, query=query)
 
 @app.route("/add")
@@ -225,3 +234,49 @@ def user_page(username):
         user_favorites = [f["album_id"] for f in favorites]
 
     return render_template("user.html", albums=albums, username=username, user_favorites=user_favorites)
+
+@app.route("/album/<int:album_id>")
+def album_detail(album_id):
+    album = db.query("SELECT * FROM albums WHERE id = ?", (album_id,))
+    if not album:
+        flash("Album not found", "error")
+        return redirect("/")
+    album = album[0]
+
+    user_id = session.get("user_id")
+    reviews = db.query("""
+                        SELECT r.stars, r.text, r.created_at, u.username
+                       FROM reviews r
+                       JOIN users u ON r.user_id = u.id
+                       WHERE r.album_id = ?
+                       ORDER BY r.created_at DESC
+                       """, (album_id,))
+
+    avg_stars = db.query("SELECT AVG(stars) AS avg FROM reviews WHERE album_id = ?", (album_id,))[0]["avg"] or 0
+    has_reviewed = False
+    if user_id:
+        has_reviewed = bool(db.query("SELECT 1 FROM reviews WHERE album_id = ? AND user_id = ?", (album_id, user_id)))
+
+    return render_template("album.html", album=album, reviews=reviews, avg_stars=avg_stars, has_reviewed=has_reviewed)
+
+@app.route("/review/<int:album_id>", methods=["POST"])
+def add_review(album_id):
+    if "user_id" not in session:
+        flash("You must be logged in to add reviews", "error")
+        return redirect
+
+    stars = request.form.get("stars")
+    text = request.form.get("text", "").strip()
+
+    if not stars or not stars.isdigit() or int(stars) < 1 or int(stars) > 5:
+        flash("Stars must be between 1 and 5", "error")
+        return redirect(f"/album{album_id}")
+
+    try:
+        db.execute("INSERT INTO reviews (album_id, user_id, stars, text) VALUES (?, ?, ?, ?)",
+                   (album_id, session["user_id"], stars, text))
+        flash("Review added!", "success")
+    except sqlite3.IntegrityError:
+        flash("You have already reviewed this album", "error")
+
+    return redirect(f"/album/{album_id}")
