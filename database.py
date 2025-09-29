@@ -39,7 +39,11 @@ def search_albums(query_text, user_id=None):
         JOIN users u ON a.user_id = u.id
         WHERE a.title LIKE ? OR a.artist LIKE ? OR a.genre LIKE ?
     """
-    params = (f"%{query_text}%", f"%{query_text}%", f"%{query_text}%")
+    params = [f"%{query_text}%", f"%{query_text}%", f"%{query_text}%"]
+
+    if query_text.isdigit():
+        sql += " OR a.year = ?"
+        params.append(int(query_text))
     return [dict(row) for row in query(sql, params)]
 
 def get_all_albums(user_id=None):
