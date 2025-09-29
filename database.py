@@ -1,9 +1,5 @@
 from db import query, execute
 
-def get_album_by_id(album_id):
-    rows = query("SELECT * FROM albums WHERE id = ?", (album_id,))
-    return dict(rows[0]) if rows else None
-
 def add_album(title, artist, year, genre, user_id, image_url=None):
     try:
         execute(
@@ -37,12 +33,21 @@ def validate_album_data(data):
     return errors
 
 def search_albums(query_text, user_id=None):
-    sql = "SELECT * FROM albums WHERE title LIKE ? OR artist LIKE ? OR genre LIKE ?"
+    sql = """
+        SELECT a.*, u.username AS owner_username
+        FROM albums a
+        JOIN users u ON a.user_id = u.id
+        WHERE a.title LIKE ? OR a.artist LIKE ? OR a.genre LIKE ?
+    """
     params = (f"%{query_text}%", f"%{query_text}%", f"%{query_text}%")
     return [dict(row) for row in query(sql, params)]
 
 def get_all_albums(user_id=None):
-    sql = "SELECT * FROM albums"
+    sql = """
+        SELECT a.*, u.username AS owner_username
+        FROM albums a
+        JOIN users u ON a.user_id = u.id
+    """
     return [dict(row) for row in query(sql)]
 
 def get_user_favorites(user_id):
@@ -69,3 +74,12 @@ def has_user_reviewed(album_id, user_id):
     sql = "SELECT 1 FROM reviews WHERE album_id = ? AND user_id = ?"
     result = query(sql, (album_id, user_id))
     return bool(result)
+
+def get_album_by_id(album_id):
+    rows = query("""
+        SELECT a.*, u.username AS owner_username
+        FROM albums a
+        JOIN users u ON a.user_id = u.id
+        WHERE a.id = ?
+    """, (album_id,))
+    return dict(rows[0]) if rows else None

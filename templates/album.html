@@ -23,15 +23,21 @@
     <ul>
         {% for review in reviews %}
         <li>
-        <strong>{{ review['username'] }}</strong>: {{ '★' * review['stars'] }}{{ '☆' * (5 - review['stars']) }}<br>
-        {{ review['text'] }}<br>
-        <small>{{ review['created_at'] }}</small>
+            <strong>
+                <a href="{{ url_for('user_page', username=review['username']) }}">
+                    {{ review['username'] }}
+                </a>
+            </strong>:
+            {{ '★' * review['stars'] }}{{ '☆' * (5 - review['stars']) }}<br>
+            {{ review['text'] }}<br>
+            <small>{{ review['created_at'] }}</small>
         </li>
         {% endfor %}
-        </ul>
+    </ul>
     {% else %}
         <p>No reviews yet.</p>
     {% endif %}
+
 
     {% if session.username and not has_reviewed %}
         <h2>Add Review</h2>

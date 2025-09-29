@@ -20,12 +20,18 @@
                 - <em>{{ album['genre'] }}</em>
             {% endif %}
             <br>
-            {% if album['image_url'] %}
-                <img src="{{ album['image_url'] }}" alt="Album cover" width="100">
-            {% else %}
-                <img src="{{ url_for('static', filename='placeholder.jpg') }}" alt="Album cover" width="100">
-            {% endif %}
+            Added by:
+            <a href="{{ url_for('user_page', username=album['owner_username']) }}">
+                {{ album['owner_username'] }}
+            </a>
 
+            <div>
+                {% if album['image_url'] %}
+                    <img src="{{ album['image_url'] }}" alt="Album cover" width="100">
+                {% else %}
+                    <img src="{{ url_for('static', filename='placeholder.jpg') }}" alt="Album cover" width="100">
+                {% endif %}
+            </div>
 
             <br>
             <a href="{{ url_for('album_detail', album_id=album['id']) }}">View Details</a>
