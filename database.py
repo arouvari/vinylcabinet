@@ -54,3 +54,18 @@ def get_user_favorites(user_id):
         WHERE f2.user_id = ?
     """, (user_id, user_id))
     return [dict(row) for row in rows]
+
+def get_album_reviews(album_id):
+    from db import query
+    sql = "SELECT r.*, u.username FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.album_id = ? ORDER BY r.id DESC"
+    return [dict(row) for row in query(sql, (album_id,))]
+
+def get_album_avg_rating(album_id):
+    sql = "SELECT AVG(stars) as avg_stars FROM reviews WHERE album_id = ?"
+    result = query(sql, (album_id,))
+    return result[0]["avg_stars"] if result and result[0]["avg_stars"] is not None else 0
+
+def has_user_reviewed(album_id, user_id):
+    sql = "SELECT 1 FROM reviews WHERE album_id = ? AND user_id = ?"
+    result = query(sql, (album_id, user_id))
+    return bool(result)
