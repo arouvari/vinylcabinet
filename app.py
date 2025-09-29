@@ -1,68 +1,76 @@
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, session, flash, request, abort, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import config
 import db
 import database
+import secrets
 
 app = Flask(__name__)
 app.secret_key = config.secret_key
 
-@app.route("/register")
+def check_csrf():
+    token = request.form.get("csrf_token")
+    if not token or token != session.get("csrf_token"):
+        abort(403)
+
+
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    if request.method == "POST":
+        username = request.form["username"]
+        password1 = request.form["password1"]
+        password2 = request.form["password2"]
+
+        if password1 != password2:
+            flash("Passwords don't match", "error")
+            return redirect("/register")
+
+        password_hash = generate_password_hash(password1)
+
+        try:
+            db.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, password_hash))
+        except sqlite3.IntegrityError:
+            flash("Username taken", "error")
+            return redirect("/register")
+
+        flash("Account registered", "success")
+        return redirect("/login")
+
     return render_template("register.html")
 
-@app.route("/register", methods=["POST"])
-def register_post():
-    username = request.form["username"]
-    password1 = request.form["password1"]
-    password2 = request.form["password2"]
-
-    if password1 != password2:
-        flash("Passwords don't match", "error")
-        return redirect("/register")
-
-    password_hash = generate_password_hash(password1)
-
-    try:
-        db.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, password_hash))
-    except sqlite3.IntegrityError:
-        flash("Username taken", "error")
-        return redirect("/register")
-
-    flash("Account registered", "success")
-    return redirect("/login")
-
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        result = db.query("SELECT id, password_hash FROM users WHERE username = ?", (username,))
+        if not result:
+            flash("Wrong username or password", "error")
+            return redirect("/login")
+
+        user_id = result[0]["id"]
+        password_hash = result[0]["password_hash"]
+
+        if check_password_hash(password_hash, password):
+            session["username"] = username
+            session["user_id"] = user_id
+            session["csrf_token"] = secrets.token_hex(16)
+            flash("Logged in successfully", "success")
+            return redirect("/")
+        else:
+            flash("Wrong username or password", "error")
+            return redirect("/login")
+
     return render_template("login.html")
 
-@app.route("/login", methods=["POST"])
-def login_post():
-    username = request.form["username"]
-    password = request.form["password"]
-
-    result = db.query("SELECT id, password_hash FROM users WHERE username = ?", (username,))
-    if not result:
-        flash("Wrong username or password", "error")
-        return redirect("/login")
-
-    user_id = result[0]["id"]
-    password_hash = result[0]["password_hash"]
-
-    if check_password_hash(password_hash, password):
-        session["username"] = username
-        session["user_id"] = user_id
-        flash("Logged in successfully", "success")
-        return redirect("/")
-    else:
-        flash("Wrong username or password", "error")
-        return redirect("/login")
 
 @app.route("/logout")
 def logout():
     session.pop("username", None)
     session.pop("user_id", None)
+    session.pop("csrf_token", None)
     flash("Logged out successfully", "success")
     return redirect("/")
 
@@ -88,6 +96,8 @@ def add():
 
     form_data = {}
     if request.method == "POST":
+        check_csrf()
+
         form_data = {
             "title": request.form.get("title", "").strip(),
             "artist": request.form.get("artist", "").strip(),
@@ -144,6 +154,8 @@ def delete_album(album_id):
         flash("You must be logged in to delete albums", "error")
         return redirect("/login")
 
+    check_csrf()
+
     album = db.query("SELECT user_id FROM albums WHERE id = ?", (album_id,))
     if not album:
         flash("Album not found", "error")
@@ -174,6 +186,8 @@ def edit_album(album_id):
 
     form_data = {}
     if request.method == "POST":
+        check_csrf()
+
         form_data = {
             "title": request.form.get("title", "").strip(),
             "artist": request.form.get("artist", "").strip(),
@@ -219,6 +233,8 @@ def favorite(album_id):
     if "user_id" not in session:
         flash("You must be logged in to favorite albums", "error")
         return redirect("/login")
+
+    check_csrf()
 
     user_id = session["user_id"]
     existing = db.query("SELECT 1 FROM favorites WHERE user_id = ? AND album_id = ?", (user_id, album_id))
@@ -270,6 +286,8 @@ def add_review(album_id):
     if "user_id" not in session:
         flash("You must be logged in to add reviews", "error")
         return redirect("/login")
+
+    check_csrf()
 
     stars = request.form.get("stars")
     text = request.form.get("text", "").strip()
