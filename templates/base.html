@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Vinyl Collection</title>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('index') }}">Home</a> |
+        {% if session.username %}
+            <a href="{{ url_for('add') }}">Add Album</a> |
+            <a href="{{ url_for('user_page', username=session.username) }}">My Favorites</a> |
+            <a href="{{ url_for('logout') }}">Logout ({{ session.username }})</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a> |
+            <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+    </nav>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

@@ -1,69 +1,66 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
-  <title>VinylCabinet</title>
-</head>
+{% block content %}
+<h1>Vinyl Cabinet</h1>
 
-<body>
-  {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <ul>
-      {% for category, message in messages %}
-        <li class="{{ category }}">{{ message }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
-  {% endwith %}
-  <h1>VinylCabinet</h1>
-  <form action="/" method="get">
-    <input type="text" name="query" placeholder="Search albums" value="{{ query or '' }}">
+<form method="GET" action="{{ url_for('index') }}">
+    <input type="text" name="query" value="{{ query }}" placeholder="Search albums by title, artist, year or genre...">
     <button type="submit">Search</button>
-  </form>
-  {% if albums %}
+    {% if query %}
+        <a href="{{ url_for('index') }}">Clear</a>
+    {% endif %}
+</form>
+
+{% if albums %}
+    <ul>
     {% for album in albums %}
-    <p>
-      <img src="{{ album['image_url'] or 'static/placeholder.jpg'}}" alt="Album cover" width="150"><br>
-      <strong>{{ album["title"] }}</strong> - {{ album["artist"]}} ({{ album["year"] }}, {{ album["genre"] }})
-      <a href="/album/{{ album['id'] }}">View Details</a>
-      {% if album['avg_stars'] %}
-      <p>
-      Average Rating: {{ '★' * album['avg_stars'] | int }}{{ '☆' * (5 - album['avg_stars'] | int) }}
-      </p>
-      {% endif %}
-      {% if session.username and album["user_id"] == session.user_id %}
-        <form action="{{ url_for('delete_album', album_id=album['id']) }}" method="post" style="display:inline;">
-          <button type="submit">Delete</button>
-        </form>
-        <a href="{{ url_for('edit_album', album_id=album['id']) }}">Edit</a>
-      {% endif %}
-    </p>
-      {% if session.username %}
-        <form action="{{ url_for('favorite', album_id=album['id']) }}" method="post" style="display:inline;">
-          {% if album["is_favorite"] %}
-            <button type="submit">★ Unfavorite</button>
-          {% else %}
-            <button type="submit">☆ Favorite</button>
-          {% endif %}
-        </form>
-      {% endif %}
+        <li>
+            <strong>{{ album['title'] }}</strong> by {{ album['artist'] }} ({{ album['year'] }})
+            {% if album['genre'] %}
+                - <em>{{ album['genre'] }}</em>
+            {% endif %}
+            <br>
+            {% if album['image_url'] %}
+                <img src="{{ album['image_url'] }}" alt="Album cover" width="100">
+            {% else %}
+                <img src="{{ url_for('static', filename='placeholder.jpg') }}" alt="Album cover" width="100">
+            {% endif %}
+
+
+            <br>
+            <a href="{{ url_for('album_detail', album_id=album['id']) }}">View Details</a>
+
+            {% if session.user_id %}
+                {% if album.get('is_favorite') %}
+                    <form action="{{ url_for('favorite', album_id=album['id']) }}" method="post" style="display:inline;">
+                        <button type="submit">★ Unfavorite</button>
+                    </form>
+                {% else %}
+                    <form action="{{ url_for('favorite', album_id=album['id']) }}" method="post" style="display:inline;">
+                        <button type="submit">☆ Favorite</button>
+                    </form>
+                {% endif %}
+
+                {% if album['user_id'] == session.user_id %}
+                    <a href="{{ url_for('edit_album', album_id=album['id']) }}">Edit</a>
+                    <form action="{{ url_for('delete_album', album_id=album['id']) }}" method="post" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Are you sure?')">Delete</button>
+                    </form>
+                {% endif %}
+            {% endif %}
+
+            {% if album.get('avg_stars') %}
+                <br>Rating: {{ '★' * (album['avg_stars'] | int) }}{{ '☆' * (5 - (album['avg_stars'] | int)) }}
+            {% endif %}
+        </li>
     {% endfor %}
-  {% else %}
-    <p>No albums found</p>
-  {% endif %}
-    <p>
-    {% if session.username %}
-    <a href="{{ url_for('add') }}">Add</a>
-    {% endif %}
-    {% if not session.username %}
-    <a href="{{ url_for('login') }}">Login</a>
-    {% endif %}
-    <a href="{{ url_for('register') }}">Register</a>
-    {% if session.username %}
-    <a href="{{ url_for('logout') }}">Logout</a>
-    {% endif %}
-  </p>
+    </ul>
+{% else %}
+    <p>No albums found.</p>
+{% endif %}
 
-</body>
-
-</html>
+{% if session.username %}
+    <p><a href="{{ url_for('add') }}">Add New Album</a></p>
+    <p><a href="{{ url_for('user_page', username=session.username) }}">My Favorites</a></p>
+{% endif %}
+{% endblock %}

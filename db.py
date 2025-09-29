@@ -1,24 +1,25 @@
 import sqlite3
-from flask import g
+
+DB_PATH = "database.db"
 
 def get_connection():
-    con = sqlite3.connect("database.db")
+    con = sqlite3.connect(DB_PATH)
     con.execute("PRAGMA foreign_keys = ON")
     con.row_factory = sqlite3.Row
     return con
 
-def execute(sql, params=[]):
+def execute(sql, params=None):
+    params = params or []
     con = get_connection()
-    result = con.execute(sql, params)
+    cur = con.execute(sql, params)
     con.commit()
-    g.last_insert_id = result.lastrowid
+    last_id = cur.lastrowid
     con.close()
+    return last_id
 
-def last_insert_id():
-    return g.last_insert_id
-
-def query(sql, params=[]):
+def query(sql, params=None):
+    params = params or []
     con = get_connection()
-    result = con.execute(sql, params).fetchall()
+    rows = con.execute(sql, params).fetchall()
     con.close()
-    return result
+    return rows

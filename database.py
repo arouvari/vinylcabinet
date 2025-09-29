@@ -1,67 +1,56 @@
-import db
-from models import Vinyl
+from db import query, execute
 
-def get_all_vinyls():
+def get_album_by_id(album_id):
+    rows = query("SELECT * FROM albums WHERE id = ?", (album_id,))
+    return dict(rows[0]) if rows else None
+
+def add_album(title, artist, year, genre, user_id, image_url=None):
     try:
-        return Vinyl.query.all()
+        execute(
+            "INSERT INTO albums (title, artist, year, genre, user_id, image_url) VALUES (?, ?, ?, ?, ?, ?)",
+            (title, artist, year, genre, user_id, image_url)
+        )
+        return True, "Album added successfully."
     except Exception as e:
-        print(f"Database error: {e}")
-        return []
+        return False, str(e)
 
-def add_vinyl(album, artist, year, genre=None):
-    try:
-        vinyl = Vinyl(album=album, artist=artist, year=year, genre=genre)
-        db.session.add(vinyl)
-        db.session.commit()
-        return True, "Vinyl added successfully"
-    except Exception as e:
-        db.session.rollback()
-        return False, f"Error adding vinyl: {str(e)}"
+def update_album(album_id, title, artist, year, genre, image_url):
+    execute("""
+        UPDATE albums SET title = ?, artist = ?, year = ?, genre = ?, image_url = ?
+        WHERE id = ?
+    """, (title, artist, year, genre, image_url, album_id))
 
-def search_vinyls(query):
-    try:
-        if not query:
-            return get_all_vinyls()
+def delete_album(album_id):
+    execute("DELETE FROM albums WHERE id = ?", (album_id,))
 
-        return Vinyl.query.filter(
-            db.or_(
-                Vinyl.album.ilike(f"%{query}%"),
-                Vinyl.artist.ilike(f"%{query}%"),
-                Vinyl.genre.ilike(f"%{query}%")
-            )
-        ).all()
-    except Exception as e:
-        print(f"Search error: {e}")
-        return []
 
-def validate_vinyl_data(form_data):
+def validate_album_data(data):
     errors = {}
-
-    album = form_data.get("album", "").strip()
-    if not album:
-        errors["album"] = "Album name is required"
-    elif len(album) > 100:
-        errors["album"] = "Album name must be less than 100 characters"
-
-    artist = form_data.get("artist", "").strip()
-    if not artist:
-        errors["artist"] = "Artist is required"
-    elif len(artist) > 100:
-        errors["artist"] = "Artist must be less than 100 characters"
-
-    year_str = form_data.get("year", "").strip()
-    if not year_str:
-        errors["year"] = "Year is required"
-    else:
-        try:
-            year = int(year_str)
-            if year < 1900 or year > 2024:
-                errors["year"] = "Year must be between 1900 and 2024"
-        except ValueError:
-            errors["year"] = "Year must be a number"
-
-    genre = form_data.get("genre", "").strip()
-    if genre and len(genre) > 50:
-        errors["genre"] = "Genre must be less than 50 characters"
-
+    if not data.get("title"):
+        errors["title"] = "Title is required."
+    if not data.get("artist"):
+        errors["artist"] = "Artist is required."
+    if not data.get("year") or not data["year"].isdigit():
+        errors["year"] = "Year must be a number."
+    if not data.get("genre"):
+        errors["genre"] = "Genre is required."
     return errors
+
+def search_albums(query_text, user_id=None):
+    sql = "SELECT * FROM albums WHERE title LIKE ? OR artist LIKE ? OR genre LIKE ?"
+    params = (f"%{query_text}%", f"%{query_text}%", f"%{query_text}%")
+    return [dict(row) for row in query(sql, params)]
+
+def get_all_albums(user_id=None):
+    sql = "SELECT * FROM albums"
+    return [dict(row) for row in query(sql)]
+
+def get_user_favorites(user_id):
+    rows = query("""
+        SELECT a.*,
+               (SELECT 1 FROM favorites f WHERE f.album_id = a.id AND f.user_id = ?) AS is_favorite
+        FROM albums a
+        JOIN favorites f2 ON a.id = f2.album_id
+        WHERE f2.user_id = ?
+    """, (user_id, user_id))
+    return [dict(row) for row in rows]
