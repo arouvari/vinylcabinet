@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, flash, request, abort, session
+from flask import Flask, render_template, request, redirect, session, flash, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import config
@@ -84,8 +84,6 @@ def index():
     else:
         albums = database.get_all_albums(user_id)
 
-    albums = [dict(album) for album in albums]
-
     return render_template("index.html", albums=albums, query=query)
 
 @app.route("/add", methods=["GET", "POST"])
@@ -94,7 +92,10 @@ def add():
         flash("You must be logged in to add albums", "error")
         return redirect("/login")
 
+    genres = database.get_all_genres()
     form_data = {}
+    selected_genre_ids = []
+
     if request.method == "POST":
         check_csrf()
 
@@ -102,9 +103,10 @@ def add():
             "title": request.form.get("title", "").strip(),
             "artist": request.form.get("artist", "").strip(),
             "year": request.form.get("year", "").strip(),
-            "genre": request.form.get("genre", "").strip(),
             "image_url": request.form.get("image_url", "").strip()
         }
+        form_data["genres"] = [int(g) for g in request.form.getlist("genres") if g.isdigit()]
+        selected_genre_ids = form_data["genres"]
 
         errors = database.validate_album_data(form_data)
 
@@ -115,14 +117,16 @@ def add():
                 submit_label="Add",
                 errors=errors,
                 form_data=form_data,
-                album=None
+                album=None,
+                genres=genres,
+                selected_genre_ids=selected_genre_ids
             )
 
         success, message = database.add_album(
             form_data["title"],
             form_data["artist"],
             int(form_data["year"]),
-            form_data["genre"],
+            form_data["genres"],
             session["user_id"],
             form_data["image_url"] or None
         )
@@ -136,15 +140,21 @@ def add():
                 "album_form.html",
                 page_title="Add Vinyl",
                 submit_label="Add",
+                errors={},  # Empty for non-validation errors
                 form_data=form_data,
-                album=None
+                album=None,
+                genres=genres,
+                selected_genre_ids=selected_genre_ids
             )
 
     return render_template(
         "album_form.html",
         page_title="Add Vinyl",
         submit_label="Add",
-        album=None
+        form_data=form_data,
+        album=None,
+        genres=genres,
+        selected_genre_ids=selected_genre_ids
     )
 
 
@@ -184,6 +194,9 @@ def edit_album(album_id):
         flash("You cannot edit this album", "error")
         return redirect("/")
 
+    genres = database.get_all_genres()  # Fixed: Use get_all_genres() for selectable list
+    selected_genre_ids = [g["id"] for g in album.get("genres", [])]
+
     form_data = {}
     if request.method == "POST":
         check_csrf()
@@ -192,9 +205,10 @@ def edit_album(album_id):
             "title": request.form.get("title", "").strip(),
             "artist": request.form.get("artist", "").strip(),
             "year": request.form.get("year", "").strip(),
-            "genre": request.form.get("genre", "").strip(),
             "image_url": request.form.get("image_url", "").strip()
         }
+        form_data["genres"] = [int(g) for g in request.form.getlist("genres") if g.isdigit()]
+        selected_genre_ids = form_data["genres"]  # Updated for submitted values
 
         errors = database.validate_album_data(form_data)
 
@@ -205,7 +219,9 @@ def edit_album(album_id):
                 submit_label="Update",
                 errors=errors,
                 form_data=form_data,
-                album=None
+                album=album,  # Pass for fallback
+                genres=genres,
+                selected_genre_ids=selected_genre_ids
             )
 
         database.update_album(
@@ -213,7 +229,7 @@ def edit_album(album_id):
             form_data["title"],
             form_data["artist"],
             int(form_data["year"]),
-            form_data["genre"],
+            form_data["genres"],
             form_data["image_url"] or None
         )
 
@@ -224,7 +240,10 @@ def edit_album(album_id):
         "album_form.html",
         page_title="Edit Vinyl",
         submit_label="Update",
-        album=album
+        form_data=form_data,
+        album=album,
+        genres=genres,
+        selected_genre_ids=selected_genre_ids
     )
 
 
@@ -256,7 +275,8 @@ def user_page(username):
         return redirect("/")
 
     profile_user_id = user[0]["id"]
-    albums = database.get_user_favorites(profile_user_id)
+    albums = database.get_user_albums(profile_user_id)
+    stats = database.get_user_stats(profile_user_id)
 
     current_user_id = session.get("user_id")
     user_favorites = []
@@ -264,7 +284,11 @@ def user_page(username):
         favorites = db.query("SELECT album_id FROM favorites WHERE user_id = ?", (current_user_id,))
         user_favorites = [f["album_id"] for f in favorites]
 
-    return render_template("user.html", albums=albums, username=username, user_favorites=user_favorites)
+    for album in albums:
+        album["is_favorite"] = album["id"] in user_favorites
+
+    return render_template("user.html", albums=albums, username=username, user_favorites=user_favorites, stats=stats)  # Fixed: Added stats=stats
+
 
 @app.route("/album/<int:album_id>")
 def album_detail(album_id):

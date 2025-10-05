@@ -14,7 +14,8 @@
     {% endif %}
     {% endwith %}
 
-    <h1>{{ album['title'] }} by {{ album['artist'] }} ({{ album['year'] }}, {{ album['genre'] }})</h1>
+    <h1>{{ album['title'] }} by {{ album['artist'] }} ({{ album['year'] }})</h1>
+    <p>Genres: {% for genre in album.genres %}{{ genre.name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
     {% if album['image_url'] %}<img src="{{ album['image_url'] }}" alt="Album cover">{% endif %}
     <p>Average Rating: {% if avg_stars %}{{ '★' * (avg_stars | int) }}{{ '☆' * (5 - (avg_stars | int)) }}{% else %}No reviews yet{% endif %}</p>
 

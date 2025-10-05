@@ -34,3 +34,19 @@ CREATE TABLE IF NOT EXISTS reviews (
     FOREIGN KEY (album_id) REFERENCES albums (id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS genres (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS album_genres (
+    album_id INTEGER,
+    genre_id INTEGER,
+    PRIMARY KEY (album_id, genre_id),
+    FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE,
+    FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
+);
+
+INSERT OR IGNORE INTO genres (name) VALUES
+    ('Rock'), ('Pop'), ('Jazz'), ('Hip-Hop'), ('Classical'), ('Electronic'), ('Metal');

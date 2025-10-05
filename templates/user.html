@@ -4,7 +4,7 @@
   <title>{{ username }} - VinylCabinet</title>
 </head>
 <body>
-  <h1>{{ username }}'s Favorite Cabinet</h1>
+  <h1>{{ username }}'s Collection</h1>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
@@ -16,25 +16,36 @@
   {% endif %}
   {% endwith %}
 
-  {% if albums %}
+  <div class="stats">
+    <h2>Statistics</h2>
+    <ul>
+      <li>Number of Albums: {{ stats.num_albums }}</li>
+      <li>Total Reviews Received: {{ stats.total_reviews }}</li>
+      <li>Average Album Rating: {{ stats.avg_album_rating }} / 5</li>
+    </ul>
+  </div>
+
+{% if albums %}
     {% for album in albums %}
-      <p>
-        <img src="{{ album['image_url'] or 'static/placeholder.jpg'}}" alt="Album cover" width="150"><br>
-        <strong>{{ album['title'] }}</strong> - {{ album['artist'] }} ({{ album['year'] }}, {{ album['genre'] }})
+      <div class="album">
+        <img src="{{ album['image_url'] or 'static/placeholder.jpg' }}" alt="Album cover" width="150"><br>
+        <strong>{{ album['title'] }}</strong> - {{ album['artist'] }} ({{ album['year'] }})<br>
+        Genres: {% for genre in album.genres %}{{ genre.name }}{% if not loop.last %}, {% endif %}{% else %}No genres{% endfor %}<br>
 
         {% if session.user_id %}
-            <form action="{{ url_for('favorite', album_id=album['id']) }}" method="post" style="display:inline;">
-                {% if album['id'] in user_favorites %}
-                    <button type="submit">★ Unfavorite</button>
-                {% else %}
-                     <button type="submit">☆ Favorite</button>
+          <form action="{{ url_for('favorite', album_id=album['id']) }}" method="post" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+            {% if album.is_favorite %}
+              <button type="submit">★ Unfavorite</button>
+            {% else %}
+              <button type="submit">☆ Favorite</button>
+            {% endif %}
+          </form>
         {% endif %}
-      </form>
-    {% endif %}
-    </p>
+      </div>
     {% endfor %}
   {% else %}
-    <p>No favorite albums yet.</p>
+    <p>No albums added yet.</p>
   {% endif %}
 
   <p>
