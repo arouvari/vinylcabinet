@@ -1,22 +1,32 @@
+"""
+Flask application for managing a vinyl collection.
+Provides routes for user authentication, album management, and reviews.
+"""
+
+import sqlite3
+import secrets
 from flask import Flask, render_template, request, redirect, session, flash, abort
 from werkzeug.security import generate_password_hash, check_password_hash
-import sqlite3
 import config
 import db
 import database
-import secrets
 
 app = Flask(__name__)
 app.secret_key = config.secret_key
 
 def check_csrf():
+    """
+    Verifies the CSRF token in the request matches the session token.
+    """
     token = request.form.get("csrf_token")
     if not token or token != session.get("csrf_token"):
         abort(403)
 
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    """
+    Handles user registration.
+    """
     if request.method == "POST":
         check_csrf()
         username = request.form.get("username", "").strip()
@@ -34,7 +44,10 @@ def register():
         password_hash = generate_password_hash(password1)
 
         try:
-            db.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, password_hash))
+            db.execute(
+                "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+                (username, password_hash)
+            )
         except sqlite3.IntegrityError:
             flash("Username already taken", "error")
             return redirect("/register")
@@ -46,13 +59,19 @@ def register():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    """
+    Handles user login.
+    """
     if request.method == "POST":
         check_csrf()
 
         username = request.form["username"]
         password = request.form["password"]
 
-        result = db.query("SELECT id, password_hash FROM users WHERE username = ?", (username,))
+        result = db.query(
+            "SELECT id, password_hash FROM users WHERE username = ?",
+            (username,)
+        )
         if not result:
             flash("Wrong username or password", "error")
             return redirect("/login")
@@ -66,15 +85,16 @@ def login():
             session["csrf_token"] = secrets.token_hex(16)
             flash("Logged in successfully", "success")
             return redirect("/")
-        else:
-            flash("Wrong username or password", "error")
-            return redirect("/login")
+        flash("Wrong username or password", "error")
+        return redirect("/login")
 
     return render_template("login.html")
 
-
 @app.route("/logout")
 def logout():
+    """
+    Logs the user out by clearing the session.
+    """
     session.pop("username", None)
     session.pop("user_id", None)
     session.pop("csrf_token", None)
@@ -83,15 +103,25 @@ def logout():
 
 @app.route("/", methods=["GET"])
 def index():
+    """
+    Displays the home page with a list of albums.
+    """
     query = request.args.get("query", "").strip()
     user_id = session.get("user_id")
 
-    albums = database.search_albums(query, user_id) if query else database.get_all_albums(user_id)
+    albums = (
+        database.search_albums(query, user_id)
+        if query
+        else database.get_all_albums(user_id)
+    )
 
     return render_template("index.html", albums=albums, query=query)
 
 @app.route("/add", methods=["GET", "POST"])
 def add():
+    """
+    Allows logged-in users to add a new album.
+    """
     if "username" not in session:
         flash("You must be logged in to add albums", "error")
         return redirect("/login")
@@ -109,7 +139,9 @@ def add():
             "year": request.form.get("year", "").strip(),
             "image_url": request.form.get("image_url", "").strip()
         }
-        form_data["genres"] = [int(g) for g in request.form.getlist("genres") if g.isdigit()]
+        form_data["genres"] = [
+            int(g) for g in request.form.getlist("genres") if g.isdigit()
+        ]
         selected_genre_ids = form_data["genres"]
 
         errors = database.validate_album_data(form_data)
@@ -138,18 +170,17 @@ def add():
         if success:
             flash(message, "success")
             return redirect("/")
-        else:
-            flash(message, "error")
-            return render_template(
-                "album_form.html",
-                page_title="Add Vinyl",
-                submit_label="Add",
-                errors={},  # Empty for non-validation errors
-                form_data=form_data,
-                album=None,
-                genres=genres,
-                selected_genre_ids=selected_genre_ids
-            )
+        flash(message, "error")
+        return render_template(
+            "album_form.html",
+            page_title="Add Vinyl",
+            submit_label="Add",
+            errors={},
+            form_data=form_data,
+            album=None,
+            genres=genres,
+            selected_genre_ids=selected_genre_ids
+        )
 
     return render_template(
         "album_form.html",
@@ -161,9 +192,11 @@ def add():
         selected_genre_ids=selected_genre_ids
     )
 
-
 @app.route("/delete/<int:album_id>", methods=["POST"])
 def delete_album(album_id):
+    """
+    Allows logged-in users to delete an album they own.
+    """
     if "username" not in session:
         flash("You must be logged in to delete albums", "error")
         return redirect("/login")
@@ -185,6 +218,9 @@ def delete_album(album_id):
 
 @app.route("/edit/<int:album_id>", methods=["GET", "POST"])
 def edit_album(album_id):
+    """
+    Allows logged-in users to edit an album they own.
+    """
     if "username" not in session:
         flash("You must be logged in to edit albums", "error")
         return redirect("/login")
@@ -198,7 +234,7 @@ def edit_album(album_id):
         flash("You cannot edit this album", "error")
         return redirect("/")
 
-    genres = database.get_all_genres()  # Fixed: Use get_all_genres() for selectable list
+    genres = database.get_all_genres()
     selected_genre_ids = [g["id"] for g in album.get("genres", [])]
 
     form_data = {}
@@ -211,8 +247,10 @@ def edit_album(album_id):
             "year": request.form.get("year", "").strip(),
             "image_url": request.form.get("image_url", "").strip()
         }
-        form_data["genres"] = [int(g) for g in request.form.getlist("genres") if g.isdigit()]
-        selected_genre_ids = form_data["genres"]  # Updated for submitted values
+        form_data["genres"] = [
+            int(g) for g in request.form.getlist("genres") if g.isdigit()
+        ]
+        selected_genre_ids = form_data["genres"]
 
         errors = database.validate_album_data(form_data)
 
@@ -223,7 +261,7 @@ def edit_album(album_id):
                 submit_label="Update",
                 errors=errors,
                 form_data=form_data,
-                album=album,  # Pass for fallback
+                album=album,
                 genres=genres,
                 selected_genre_ids=selected_genre_ids
             )
@@ -250,9 +288,11 @@ def edit_album(album_id):
         selected_genre_ids=selected_genre_ids
     )
 
-
 @app.route("/favorite/<int:album_id>", methods=["POST"])
 def favorite(album_id):
+    """
+    Allows logged-in users to favorite or unfavorite an album.
+    """
     if "user_id" not in session:
         flash("You must be logged in to favorite albums", "error")
         return redirect("/login")
@@ -260,47 +300,72 @@ def favorite(album_id):
     check_csrf()
 
     user_id = session["user_id"]
-    existing = db.query("SELECT 1 FROM favorites WHERE user_id = ? AND album_id = ?", (user_id, album_id))
+    existing = db.query(
+        "SELECT 1 FROM favorites WHERE user_id = ? AND album_id = ?",
+        (user_id, album_id)
+    )
 
     if existing:
-        db.execute("DELETE FROM favorites WHERE user_id = ? AND album_id = ?", (user_id, album_id))
+        db.execute(
+            "DELETE FROM favorites WHERE user_id = ? AND album_id = ?",
+            (user_id, album_id)
+        )
         flash("Album removed from favorites", "success")
     else:
-        db.execute("INSERT INTO favorites (user_id, album_id) VALUES (?, ?)", (user_id, album_id))
+        db.execute(
+            "INSERT INTO favorites (user_id, album_id) VALUES (?, ?)",
+            (user_id, album_id)
+        )
         flash("Album added to favorites", "success")
 
     return redirect("/")
 
 @app.route("/user/<username>")
 def user_page(username):
+    """
+    Displays a user's profile page with their albums and statistics.
+    """
     user = db.query("SELECT id FROM users WHERE username = ?", (username,))
     if not user:
         flash("User not found", "error")
         return redirect("/")
 
     profile_user_id = user[0]["id"]
-    albums = database.get_user_albums(profile_user_id)
+    albums = database.get_user_albums(profile_user_id) or []
     stats = database.get_user_stats(profile_user_id)
 
     current_user_id = session.get("user_id")
     user_favorites = []
     if current_user_id:
-        favorites = db.query("SELECT album_id FROM favorites WHERE user_id = ?", (current_user_id,))
+        favorites = db.query(
+            "SELECT album_id FROM favorites WHERE user_id = ?",
+            (current_user_id,)
+        )
         user_favorites = [f["album_id"] for f in favorites]
 
     for album in albums:
         album["is_favorite"] = album["id"] in user_favorites
 
-    user_favorites_albums = database.get_user_favorites(session.get("user_id"))
-    for album in user_favorites_albums:
-        if album not in albums:
-            albums.append(album)
+    user_favorites_albums = database.get_user_favorites(current_user_id) if current_user_id else []
+    if user_favorites_albums:
+        album_ids = [album["id"] for album in albums]
+        for album in user_favorites_albums:
+            if album["id"] not in album_ids:
+                albums.append(album)
 
-    return render_template("user.html", albums=albums, username=username, user_favorites=user_favorites, stats=stats)  # Fixed: Added stats=stats
-
+    return render_template(
+        "user.html",
+        albums=albums,
+        username=username,
+        user_favorites=user_favorites,
+        stats=stats
+    )
 
 @app.route("/album/<int:album_id>")
 def album_detail(album_id):
+    """
+    Displays details for a specific album, including reviews and average rating.
+    """
     album = database.get_album_by_id(album_id)
     if not album:
         flash("Album not found", "error")
@@ -312,10 +377,19 @@ def album_detail(album_id):
     user_id = session.get("user_id")
     has_reviewed = database.has_user_reviewed(album_id, user_id) if user_id else False
 
-    return render_template("album.html", album=album, reviews=reviews, avg_stars=avg_stars, has_reviewed=has_reviewed)
+    return render_template(
+        "album.html",
+        album=album,
+        reviews=reviews,
+        avg_stars=avg_stars,
+        has_reviewed=has_reviewed
+    )
 
 @app.route("/review/<int:album_id>", methods=["POST"])
 def add_review(album_id):
+    """
+    Allows logged-in users to add a review for an album.
+    """
     if "user_id" not in session:
         flash("You must be logged in to add reviews", "error")
         return redirect("/login")
@@ -330,8 +404,10 @@ def add_review(album_id):
         return redirect(f"/album/{album_id}")
 
     try:
-        db.execute("INSERT INTO reviews (album_id, user_id, stars, text) VALUES (?, ?, ?, ?)",
-                   (album_id, session["user_id"], stars, text))
+        db.execute(
+            "INSERT INTO reviews (album_id, user_id, stars, text) VALUES (?, ?, ?, ?)",
+            (album_id, session["user_id"], stars, text)
+        )
         flash("Review added!", "success")
     except sqlite3.IntegrityError:
         flash("You have already reviewed this album", "error")

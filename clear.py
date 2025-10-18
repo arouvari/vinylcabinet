@@ -1,3 +1,7 @@
+"""
+Script to clear all data from the database.
+"""
+
 import sqlite3
 
 db = sqlite3.connect("database.db")
