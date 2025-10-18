@@ -355,8 +355,15 @@ def user_page(username):
         return redirect("/")
 
     profile_user_id = user[0]["id"]
+    profile = database.get_user_profile(profile_user_id)
     albums = database.get_user_albums(profile_user_id) or []
     stats = database.get_user_stats(profile_user_id)
+    activity = database.get_user_activity(profile_user_id)
+
+    user_review_count = db.query(
+        "SELECT COUNT(*) as count FROM reviews WHERE user_id = ?",
+        (profile_user_id,)
+    )[0]['count']
 
     current_user_id = session.get("user_id")
     user_favorites = []
@@ -381,9 +388,42 @@ def user_page(username):
         "user.html",
         albums=albums,
         username=username,
+        profile=profile,
         user_favorites=user_favorites,
-        stats=stats
+        stats=stats,
+        activity=activity,
+        user_review_count=user_review_count
     )
+
+@app.route("/profile/edit", methods=["GET", "POST"])
+def edit_profile():
+    """
+    Allows users to edit their profile.
+    """
+    if "user_id" not in session:
+        flash("You must be logged in to edit your profile", "error")
+        return redirect("/login")
+
+    user_id = session["user_id"]
+    profile = database.get_user_profile(user_id)
+    genres = database.get_all_genres()
+
+    if request.method == "POST":
+        check_csrf()
+
+        bio = request.form.get("bio", "").strip()
+        location = request.form.get("location", "").strip()
+        profile_image_url = request.form.get("profile_image_url", "").strip()
+        favorite_genre = request.form.get("favorite_genre")
+
+        favorite_genre_id = int(favorite_genre) if favorite_genre and favorite_genre.isdigit() else None
+
+        database.update_user_profile(user_id, bio, location, profile_image_url, favorite_genre_id)
+
+        flash("Profile updated successfully!", "success")
+        return redirect(f"/user/{session['username']}")
+
+    return render_template("edit_profile.html", profile=profile, genres=genres)
 
 @app.route("/album/<int:album_id>")
 def album_detail(album_id):

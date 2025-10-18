@@ -247,3 +247,62 @@ def has_user_reviewed(album_id, user_id):
     sql = "SELECT 1 FROM reviews WHERE album_id = ? AND user_id = ?"
     result = query(sql, (album_id, user_id))
     return bool(result)
+
+def get_user_profile(user_id):
+    """
+    Fetches user profile information.
+    """
+    sql = """
+        SELECT u.id, u.username, up.bio, up.location, up.profile_image_url,
+               up.joined_date, up.favorite_genre_id, g.name as favorite_genre
+        FROM users u
+        LEFT JOIN user_profiles up ON u.id = up.user_id
+        LEFT JOIN genres g ON up.favorite_genre_id = g.id
+        WHERE u.id = ?
+    """
+    rows = query(sql, (user_id,))
+    return dict(rows[0]) if rows else None
+
+def update_user_profile(user_id, bio, location, profile_image_url, favorite_genre_id):
+    """
+    Updates or creates a user profile.
+    """
+    existing = query("SELECT user_id FROM user_profiles WHERE user_id = ?", (user_id,))
+
+    if existing:
+        execute("""
+            UPDATE user_profiles
+            SET bio = ?, location = ?, profile_image_url = ?, favorite_genre_id = ?
+            WHERE user_id = ?
+        """, (bio, location, profile_image_url, favorite_genre_id, user_id))
+    else:
+        execute("""
+            INSERT INTO user_profiles (user_id, bio, location, profile_image_url, favorite_genre_id)
+            VALUES (?, ?, ?, ?, ?)
+        """, (user_id, bio, location, profile_image_url, favorite_genre_id))
+
+def get_user_activity(user_id):
+    """
+    Fetches recent user activity.
+    """
+    recent_albums = query("""
+        SELECT id, title, artist
+        FROM albums
+        WHERE user_id = ?
+        ORDER BY id DESC
+        LIMIT 5
+    """, (user_id,))
+
+    recent_reviews = query("""
+        SELECT r.id, r.stars, r.text, r.created_at, a.title as album_title, a.id as album_id
+        FROM reviews r
+        JOIN albums a ON r.album_id = a.id
+        WHERE r.user_id = ?
+        ORDER BY r.created_at DESC
+        LIMIT 5
+    """, (user_id,))
+
+    return {
+        'recent_albums': [dict(row) for row in recent_albums],
+        'recent_reviews': [dict(row) for row in recent_reviews]
+    }

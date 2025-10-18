@@ -48,5 +48,16 @@ CREATE TABLE IF NOT EXISTS album_genres (
     FOREIGN KEY (genre_id) REFERENCES genres(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id INTEGER PRIMARY KEY,
+    bio TEXT,
+    favorite_genre_id INTEGER,
+    profile_image_url TEXT,
+    location TEXT,
+    joined_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (favorite_genre_id) REFERENCES genres (id)
+);
+
 INSERT OR IGNORE INTO genres (name) VALUES
     ('Rock'), ('Pop'), ('Jazz'), ('Hip-Hop'), ('Classical'), ('Electronic'), ('Metal');

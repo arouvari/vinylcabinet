@@ -4,8 +4,6 @@
   <title>{{ username }} - VinylCabinet</title>
 </head>
 <body>
-  <h1>{{ username }}'s Collection</h1>
-
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     <ul>
@@ -16,16 +14,76 @@
   {% endif %}
   {% endwith %}
 
+  <div class="profile-header">
+    <h1>{{ username }}'s Profile</h1>
+
+    {% if profile and profile.profile_image_url %}
+      <img src="{{ profile.profile_image_url }}" alt="{{ username }}'s profile picture" width="100" height="100">
+    {% endif %}
+
+    {% if profile and profile.bio %}
+      <p><strong>Bio:</strong> {{ profile.bio }}</p>
+    {% endif %}
+
+    {% if profile and profile.location %}
+      <p><strong>Location:</strong> {{ profile.location }}</p>
+    {% endif %}
+
+    {% if profile and profile.favorite_genre %}
+      <p><strong>Favorite Genre:</strong> {{ profile.favorite_genre }}</p>
+    {% endif %}
+
+    {% if profile and profile.joined_date %}
+      <p><strong>Member since:</strong> {{ profile.joined_date[:10] }}</p>
+    {% endif %}
+
+    {% if session.username == username %}
+      <a href="{{ url_for('edit_profile') }}">Edit Profile</a>
+    {% endif %}
+  </div>
+
   <div class="stats">
     <h2>Statistics</h2>
     <ul>
-      <li>Number of Albums: {{ stats.num_albums }}</li>
-      <li>Total Reviews Received: {{ stats.total_reviews }}</li>
+      <li>Albums Added: {{ stats.num_albums }}</li>
+      <li>Reviews Written: {{ user_review_count }}</li>
+      <li>Reviews Received: {{ stats.total_reviews }}</li>
       <li>Average Album Rating: {{ stats.avg_album_rating }} / 5</li>
     </ul>
   </div>
 
-{% if albums %}
+  {% if activity %}
+  <div class="recent-activity">
+    <h2>Recent Activity</h2>
+
+    {% if activity.recent_reviews %}
+      <h3>Recent Reviews</h3>
+      <ul>
+        {% for review in activity.recent_reviews %}
+          <li>
+            Reviewed <a href="{{ url_for('album_detail', album_id=review.album_id) }}">{{ review.album_title }}</a>
+            - {{ '★' * review.stars }}{{ '☆' * (5 - review.stars) }}
+            <br><small>{{ review.created_at }}</small>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    {% if activity.recent_albums %}
+      <h3>Recently Added Albums</h3>
+      <ul>
+        {% for album in activity.recent_albums %}
+          <li>
+            <a href="{{ url_for('album_detail', album_id=album.id) }}">{{ album.title }}</a> by {{ album.artist }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <h2>{{ username }}'s Collection</h2>
+  {% if albums %}
     {% for album in albums %}
       <div class="album">
         <img src="{{ album['image_url'] or url_for('static', filename='placeholder.jpg') }}" alt="Album cover" width="150"><br>
@@ -44,9 +102,9 @@
         {% endif %}
       </div>
     {% endfor %}
-{% else %}
+  {% else %}
     <p>No albums added yet.</p>
-{% endif %}
+  {% endif %}
 
   <p>
     <a href="{{ url_for('index') }}">Back to home</a>
