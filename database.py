@@ -58,7 +58,7 @@ def validate_album_data(data):
 
 def search_albums(query_text, user_id=None):
     sql = """
-        SELECT DISTINCT a.*, u.username AS owner_username
+        SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, u.username AS owner_username
         FROM albums a
         JOIN users u ON a.user_id = u.id
         LEFT JOIN album_genres ag ON a.id = ag.album_id
@@ -74,7 +74,7 @@ def search_albums(query_text, user_id=None):
 
 def get_all_albums(user_id=None):
     sql = """
-        SELECT DISTINCT a.*, u.username AS owner_username
+        SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, u.username AS owner_username
         FROM albums a
         JOIN users u ON a.user_id = u.id
         LEFT JOIN album_genres ag ON a.id = ag.album_id
@@ -86,13 +86,14 @@ def get_all_albums(user_id=None):
     return albums
 
 def get_user_favorites(user_id):
-    rows = query("""
-        SELECT a.*,
+    sql = """
+        SELECT a.id, a.title, a.artist, a.year, a.image_url,
                (SELECT 1 FROM favorites f WHERE f.album_id = a.id AND f.user_id = ?) AS is_favorite
         FROM albums a
         JOIN favorites f2 ON a.id = f2.album_id
         WHERE f2.user_id = ?
-    """, (user_id, user_id))
+    """
+    rows = query(sql, (user_id, user_id))
     albums = [dict(row) for row in rows]
     for album in albums:
         album['genres'] = get_album_genres(album['id'])
@@ -101,7 +102,7 @@ def get_user_favorites(user_id):
 def get_user_albums(user_id):
     """Get all albums added by a specific user, with genres."""
     sql = """
-        SELECT DISTINCT a.*, u.username AS owner_username
+        SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, u.username AS owner_username
         FROM albums a
         JOIN users u ON a.user_id = u.id
         LEFT JOIN album_genres ag ON a.id = ag.album_id
@@ -114,7 +115,13 @@ def get_user_albums(user_id):
     return albums
 
 def get_album_reviews(album_id):
-    sql = "SELECT r.*, u.username FROM reviews r JOIN users u ON r.user_id = u.id WHERE r.album_id = ? ORDER BY r.id DESC"
+    sql = """
+        SELECT r.id, r.album_id, r.user_id, r.stars, r.text, r.created_at, u.username
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.album_id = ?
+        ORDER BY r.id DESC
+    """
     return [dict(row) for row in query(sql, (album_id,))]
 
 def get_album_avg_rating(album_id):
@@ -128,12 +135,13 @@ def has_user_reviewed(album_id, user_id):
     return bool(result)
 
 def get_album_by_id(album_id):
-    rows = query("""
-        SELECT a.*, u.username AS owner_username
+    sql = """
+        SELECT a.id, a.title, a.artist, a.year, a.image_url, u.username AS owner_username
         FROM albums a
         JOIN users u ON a.user_id = u.id
         WHERE a.id = ?
-    """, (album_id,))
+    """
+    rows = query(sql, (album_id,))
     if not rows:
         return None
     album = dict(rows[0])
@@ -143,9 +151,9 @@ def get_album_by_id(album_id):
 def get_user_stats(user_id):
     """Get statistics for a user: num albums, total reviews, avg album rating."""
     stats = {}
-    stats['num_albums'] = query("SELECT COUNT(*) as count FROM albums WHERE user_id = ?", (user_id,))[0]['count']
+    stats['num_albums'] = query("SELECT COUNT(id) as count FROM albums WHERE user_id = ?", (user_id,))[0]['count']
     stats['total_reviews'] = query("""
-        SELECT COUNT(*) as count
+        SELECT COUNT(r.id) as count
         FROM reviews r
         JOIN albums a ON r.album_id = a.id
         WHERE a.user_id = ?

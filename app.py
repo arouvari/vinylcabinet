@@ -19,10 +19,13 @@ def check_csrf():
 def register():
     if request.method == "POST":
         check_csrf()
+        username = request.form.get("username", "").strip()
+        password1 = request.form.get("password1", "").strip()
+        password2 = request.form.get("password2", "").strip()
 
-        username = request.form["username"]
-        password1 = request.form["password1"]
-        password2 = request.form["password2"]
+        if not username or not password1 or not password2:
+            flash("All fields are required", "error")
+            return redirect("/register")
 
         if password1 != password2:
             flash("Passwords don't match", "error")
@@ -33,7 +36,7 @@ def register():
         try:
             db.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, password_hash))
         except sqlite3.IntegrityError:
-            flash("Username taken", "error")
+            flash("Username already taken", "error")
             return redirect("/register")
 
         flash("Account registered", "success")
@@ -83,10 +86,7 @@ def index():
     query = request.args.get("query", "").strip()
     user_id = session.get("user_id")
 
-    if query:
-        albums = database.search_albums(query, user_id)
-    else:
-        albums = database.get_all_albums(user_id)
+    albums = database.search_albums(query, user_id) if query else database.get_all_albums(user_id)
 
     return render_template("index.html", albums=albums, query=query)
 
@@ -290,6 +290,11 @@ def user_page(username):
 
     for album in albums:
         album["is_favorite"] = album["id"] in user_favorites
+
+    user_favorites_albums = database.get_user_favorites(session.get("user_id"))
+    for album in user_favorites_albums:
+        if album not in albums:
+            albums.append(album)
 
     return render_template("user.html", albums=albums, username=username, user_favorites=user_favorites, stats=stats)  # Fixed: Added stats=stats
 

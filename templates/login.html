@@ -20,11 +20,11 @@
     <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
     <p>
       Username: <br />
-      <input type="text" name="username" />
+      <input type="text" name="username" required />
     </p>
     <p>
       Password: <br />
-      <input type="password" name="password" />
+      <input type="password" name="password" required />
     </p>
     <input type="submit" value="Login" />
     <a href="/">Home</a>
