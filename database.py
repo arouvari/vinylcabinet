@@ -87,27 +87,47 @@ def search_albums(query_text, user_id=None):
     """
     Searches albums based on title, artist, or genre.
     """
-    sql = """
-        SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, u.username AS owner_username
+    search_terms = query_text.split()
+
+    if not search_terms:
+        return []
+
+    conditions = []
+    params = []
+
+    for term in search_terms:
+        term_pattern = f"%{term}%"
+        conditions.append(
+            "(a.title LIKE ? OR a.artist LIKE ? OR g.name LIKE ? "
+            "OR CAST(a.year AS TEXT) LIKE ?)"
+        )
+        params.extend([term_pattern, term_pattern, term_pattern, term_pattern])
+
+    where_clause = " AND ".join(conditions)
+
+    sql = f"""
+        SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, a.user_id,
+               u.username AS owner_username
         FROM albums a
         JOIN users u ON a.user_id = u.id
         LEFT JOIN album_genres ag ON a.id = ag.album_id
         LEFT JOIN genres g ON ag.genre_id = g.id
-        WHERE a.title LIKE ? OR a.artist LIKE ? OR g.name LIKE ?
+        WHERE {where_clause}
     """
-    params = [f"%{query_text}%", f"%{query_text}%", f"%{query_text}%"]
 
-    if query_text.isdigit():
-        sql += " OR a.year = ?"
-        params.append(int(query_text))
-    return [dict(row) for row in query(sql, params)]
+    rows = query(sql, params)
+    albums = [dict(row) for row in rows]
+    for album in albums:
+        album['genres'] = get_album_genres(album['id'])
+    return albums
 
 def get_all_albums(user_id=None):
     """
     Fetches all albums, optionally filtering by user.
     """
     sql = """
-        SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, u.username AS owner_username
+        SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, a.user_id,
+               u.username AS owner_username
         FROM albums a
         JOIN users u ON a.user_id = u.id
         LEFT JOIN album_genres ag ON a.id = ag.album_id
@@ -175,4 +195,55 @@ def get_user_stats(user_id):
     stats['avg_album_rating'] = (
         round(avg_rating[0]['avg'], 1) if avg_rating[0]['avg'] else 0
     )
+
     return stats
+def get_album_by_id(album_id):
+    """
+    Fetches a single album by its ID.
+    """
+    sql = """
+        SELECT a.id, a.title, a.artist, a.year, a.image_url, a.user_id,
+               u.username AS owner_username
+        FROM albums a
+        JOIN users u ON a.user_id = u.id
+        WHERE a.id = ?
+    """
+    rows = query(sql, (album_id,))
+    if not rows:
+        return None
+    album = dict(rows[0])
+    album['genres'] = get_album_genres(album_id)
+    return album
+
+def get_album_reviews(album_id):
+    """
+    Fetches all reviews for a specific album.
+    """
+    sql = """
+        SELECT r.id, r.stars, r.text, r.created_at, u.username
+        FROM reviews r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.album_id = ?
+        ORDER BY r.created_at DESC
+    """
+    rows = query(sql, (album_id,))
+    return [dict(row) for row in rows]
+
+def get_album_avg_rating(album_id):
+    """
+    Calculates the average rating for an album.
+    """
+    sql = "SELECT AVG(stars) as avg FROM reviews WHERE album_id = ?"
+    result = query(sql, (album_id,))
+    avg = result[0]['avg'] if result and result[0]['avg'] else None
+    return round(avg, 1) if avg else None
+
+def has_user_reviewed(album_id, user_id):
+    """
+    Checks if a user has already reviewed an album.
+    """
+    if not user_id:
+        return False
+    sql = "SELECT 1 FROM reviews WHERE album_id = ? AND user_id = ?"
+    result = query(sql, (album_id, user_id))
+    return bool(result)

@@ -28,7 +28,7 @@
 {% if albums %}
     {% for album in albums %}
       <div class="album">
-        <img src="{{ album['image_url'] or 'static/placeholder.jpg' }}" alt="Album cover" width="150"><br>
+        <img src="{{ album['image_url'] or url_for('static', filename='placeholder.jpg') }}" alt="Album cover" width="150"><br>
         <strong>{{ album['title'] }}</strong> - {{ album['artist'] }} ({{ album['year'] }})<br>
         Genres: {% for genre in album.genres %}{{ genre.name }}{% if not loop.last %}, {% endif %}{% else %}No genres{% endfor %}<br>
 

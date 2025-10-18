@@ -27,6 +27,9 @@ def register():
     """
     Handles user registration.
     """
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(16)
+
     if request.method == "POST":
         check_csrf()
         username = request.form.get("username", "").strip()
@@ -35,11 +38,15 @@ def register():
 
         if not username or not password1 or not password2:
             flash("All fields are required", "error")
-            return redirect("/register")
+            return render_template("register.html", filled={"username": username})
+
+        if len(username) > 16:
+            flash("Username must be 16 characters or less", "error")
+            return render_template("register.html", filled={"username": username})
 
         if password1 != password2:
             flash("Passwords don't match", "error")
-            return redirect("/register")
+            return render_template("register.html", filled={"username": username})
 
         password_hash = generate_password_hash(password1)
 
@@ -50,12 +57,12 @@ def register():
             )
         except sqlite3.IntegrityError:
             flash("Username already taken", "error")
-            return redirect("/register")
+            return render_template("register.html", filled={"username": username})
 
-        flash("Account registered", "success")
+        flash("Account registered successfully! You can now log in.", "success")
         return redirect("/login")
 
-    return render_template("register.html")
+    return render_template("register.html", filled={})
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -67,6 +74,7 @@ def login():
 
         username = request.form["username"]
         password = request.form["password"]
+        next_page = request.form.get("next_page", "/")
 
         result = db.query(
             "SELECT id, password_hash FROM users WHERE username = ?",
@@ -74,7 +82,7 @@ def login():
         )
         if not result:
             flash("Wrong username or password", "error")
-            return redirect("/login")
+            return render_template("login.html", next_page=next_page)
 
         user_id = result[0]["id"]
         password_hash = result[0]["password_hash"]
@@ -84,11 +92,13 @@ def login():
             session["user_id"] = user_id
             session["csrf_token"] = secrets.token_hex(16)
             flash("Logged in successfully", "success")
-            return redirect("/")
+            return redirect(next_page)
         flash("Wrong username or password", "error")
-        return redirect("/login")
+        return render_template("login.html", next_page=next_page)
 
-    return render_template("login.html")
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(16)
+    return render_template("login.html", next_page=request.referrer)
 
 @app.route("/logout")
 def logout():
@@ -106,16 +116,30 @@ def index():
     """
     Displays the home page with a list of albums.
     """
-    query = request.args.get("query", "").strip()
+    query_text = request.args.get("query", "").strip()
     user_id = session.get("user_id")
 
     albums = (
-        database.search_albums(query, user_id)
-        if query
+        database.search_albums(query_text, user_id)
+        if query_text
         else database.get_all_albums(user_id)
     )
 
-    return render_template("index.html", albums=albums, query=query)
+    if user_id:
+        favorites = db.query(
+            "SELECT album_id FROM favorites WHERE user_id = ?",
+            (user_id,)
+        )
+        favorite_ids = [f["album_id"] for f in favorites]
+        for album in albums:
+            album["is_favorite"] = album["id"] in favorite_ids
+            album["user_id"] = album.get("user_id")
+            album["avg_stars"] = database.get_album_avg_rating(album["id"])
+    else:
+        for album in albums:
+            album["avg_stars"] = database.get_album_avg_rating(album["id"])
+
+    return render_template("index.html", albums=albums, query=query_text)
 
 @app.route("/add", methods=["GET", "POST"])
 def add():

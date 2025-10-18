@@ -23,7 +23,7 @@
             {% if album['image_url'] %}
                 <img src="{{ album['image_url'] }}" alt="Cover" width="150">
             {% else %}
-                <img src="static/placeholder.jpg" alt="No cover" width="150">
+                <img src="{{ url_for('static', filename='placeholder.jpg') }}" alt="No cover" width="150">
             {% endif %}
 
             <a href="{{ url_for('album_detail', album_id=album['id']) }}">View Details</a>

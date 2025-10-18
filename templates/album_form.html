@@ -25,21 +25,39 @@
     <form method="POST">
         <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
 
-        <label>Title: <input type="text" name="title" value="{{ form_data.title if form_data else (album.title if album else '') }}"></label><br>
-        <label>Artist: <input type="text" name="artist" value="{{ form_data.artist if form_data else (album.artist if album else '') }}"></label><br>
-        <label>Year: <input type="number" name="year" value="{{ form_data.year if form_data else (album.year if album else '') }}"></label><br>
+        <p>
+            <label for="title">Title:</label>
+            <input type="text" id="title" name="title" value="{{ form_data.title if form_data else (album.title if album else '') }}">
+        </p>
 
-        <label>Genres:</label><br>
-        {% for genre in genres %}
-            <input type="checkbox" name="genres" value="{{ genre.id }}"
-                   {% if (form_data is defined and form_data.get('genres') and genre.id in form_data.genres) or (selected_genre_ids is defined and genre.id in selected_genre_ids) %}checked{% endif %}>
-            {{ genre.name }}<br>
-        {% endfor %}<br>
+        <p>
+            <label for="artist">Artist:</label>
+            <input type="text" id="artist" name="artist" value="{{ form_data.artist if form_data else (album.artist if album else '') }}">
+        </p>
 
-        <label>Image URL: <input type="url" name="image_url" value="{{ form_data.image_url if form_data else (album.image_url if album else '') }}"></label><br>
+        <p>
+            <label for="year">Year:</label>
+            <input type="number" id="year" name="year" value="{{ form_data.year if form_data else (album.year if album else '') }}">
+        </p>
+
+        <fieldset>
+            <legend>Genres:</legend>
+            {% for genre in genres %}
+                <label>
+                    <input type="checkbox" name="genres" value="{{ genre.id }}"
+                           {% if (form_data is defined and form_data.get('genres') and genre.id in form_data.genres) or (selected_genre_ids is defined and genre.id in selected_genre_ids) %}checked{% endif %}>
+                    {{ genre.name }}
+                </label><br>
+            {% endfor %}
+        </fieldset>
+
+        <p>
+            <label for="image_url">Image URL:</label>
+            <input type="url" id="image_url" name="image_url" value="{{ form_data.image_url if form_data else (album.image_url if album else '') }}">
+        </p>
 
         <button type="submit">{{ submit_label }}</button>
-        <a href="/">Home</a>
+        <a href="/">Cancel</a>
     </form>
 </body>
 </html>

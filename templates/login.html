@@ -18,13 +18,14 @@
     <h1>Login</h1>
   <form action="/login" method="post">
     <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+    <input type="hidden" name="next_page" value="{{ next_page or '/' }}" />
     <p>
-      Username: <br />
-      <input type="text" name="username" required />
+      <label for="username">Username:</label><br />
+      <input type="text" id="username" name="username" required />
     </p>
     <p>
-      Password: <br />
-      <input type="password" name="password" required />
+      <label for="password">Password:</label><br />
+      <input type="password" id="password" name="password" required />
     </p>
     <input type="submit" value="Login" />
     <a href="/">Home</a>
