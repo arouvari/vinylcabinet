@@ -18,6 +18,8 @@ def check_csrf():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        check_csrf()
+
         username = request.form["username"]
         password1 = request.form["password1"]
         password2 = request.form["password2"]
@@ -42,6 +44,8 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        check_csrf()
+
         username = request.form["username"]
         password = request.form["password"]
 

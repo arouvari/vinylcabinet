@@ -43,6 +43,7 @@
     {% if session.username and not has_reviewed %}
         <h2>Add Review</h2>
         <form action="/review/{{ album['id'] }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
             <label for="stars">Stars (1-5):</label>
             <select name="stars" id="stars">
                 <option value="1">1</option>
