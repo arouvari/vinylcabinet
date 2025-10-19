@@ -5,11 +5,12 @@ Provides routes for user authentication, album management, and reviews.
 
 import sqlite3
 import secrets
-from flask import Flask, render_template, request, redirect, session, flash, abort
+from flask import Flask, render_template, request, redirect, session, flash, abort, g
 from werkzeug.security import generate_password_hash, check_password_hash
 import config
 import db
 import database
+import time
 
 app = Flask(__name__)
 app.secret_key = config.secret_key
@@ -489,6 +490,16 @@ def add_review(album_id):
         flash("You have already reviewed this album", "error")
 
     return redirect(f"/album/{album_id}")
+
+@app.before_request
+def before_request():
+    g.start_time = time.time()
+
+@app.after_request
+def after_request(response):
+    elapsed_time = round(time.time() - g.start_time, 2)
+    print("elapsed time:", elapsed_time, "s")
+    return response
 
 if __name__ == "__main__":
     app.run(debug=True)
