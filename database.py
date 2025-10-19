@@ -83,14 +83,14 @@ def validate_album_data(data):
         errors["genres"] = "At least one genre is required."
     return errors
 
-def search_albums(query_text, user_id=None):
+def search_albums(query_text, user_id=None, page=1, per_page=20):
     """
     Searches albums based on title, artist, or genre.
     """
     search_terms = query_text.split()
 
     if not search_terms:
-        return []
+        return [], 0
 
     conditions = []
     params = []
@@ -105,6 +105,17 @@ def search_albums(query_text, user_id=None):
 
     where_clause = " AND ".join(conditions)
 
+    count_sql = f"""
+        SELECT COUNT(DISTINCT a.id) as total
+        FROM albums a
+        JOIN users u ON a.user_id = u.id
+        LEFT JOIN album_genres ag ON a.id = ag.album_id
+        LEFT JOIN genres g ON ag.genre_id = g.id
+        WHERE {where_clause}
+    """
+    total = query(count_sql, params)[0]['total']
+
+    offset = (page - 1) * per_page
     sql = f"""
         SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, a.user_id,
                u.username AS owner_username
@@ -113,30 +124,38 @@ def search_albums(query_text, user_id=None):
         LEFT JOIN album_genres ag ON a.id = ag.album_id
         LEFT JOIN genres g ON ag.genre_id = g.id
         WHERE {where_clause}
+        ORDER BY a.id DESC
+        LIMIT ? OFFSET ?
     """
 
-    rows = query(sql, params)
+    rows = query(sql, params + [per_page, offset])
     albums = [dict(row) for row in rows]
     for album in albums:
         album['genres'] = get_album_genres(album['id'])
-    return albums
+    return albums, total
 
-def get_all_albums(user_id=None):
+def get_all_albums(user_id=None, page=1, per_page=20):
     """
-    Fetches all albums, optionally filtering by user.
+    Fetches all albums with pagination.
     """
+    count_sql = "SELECT COUNT(DISTINCT a.id) as total FROM albums a"
+    total = query(count_sql)[0]['total']
+
+    offset = (page - 1) * per_page
     sql = """
         SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, a.user_id,
                u.username AS owner_username
         FROM albums a
         JOIN users u ON a.user_id = u.id
         LEFT JOIN album_genres ag ON a.id = ag.album_id
+        ORDER BY a.id DESC
+        LIMIT ? OFFSET ?
     """
-    rows = query(sql)
+    rows = query(sql, (per_page, offset))
     albums = [dict(row) for row in rows]
     for album in albums:
         album['genres'] = get_album_genres(album['id'])
-    return albums
+    return albums, total
 
 def get_user_favorites(user_id):
     """

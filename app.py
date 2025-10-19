@@ -118,12 +118,16 @@ def index():
     """
     query_text = request.args.get("query", "").strip()
     user_id = session.get("user_id")
+    page = request.args.get("page", 1, type=int)
+    per_page = 20
 
-    albums = (
-        database.search_albums(query_text, user_id)
+    albums, total_albums = (
+        database.search_albums(query_text, user_id, page, per_page)
         if query_text
-        else database.get_all_albums(user_id)
+        else database.get_all_albums(user_id, page, per_page)
     )
+
+    total_pages = (total_albums + per_page - 1) // per_page
 
     if user_id:
         favorites = db.query(
@@ -139,7 +143,13 @@ def index():
         for album in albums:
             album["avg_stars"] = database.get_album_avg_rating(album["id"])
 
-    return render_template("index.html", albums=albums, query=query_text)
+    return render_template(
+        "index.html",
+        albums=albums,
+        query=query_text,
+        page=page,
+        total_pages=total_pages
+    )
 
 @app.route("/add", methods=["GET", "POST"])
 def add():

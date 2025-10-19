@@ -242,3 +242,39 @@ legend {
   white-space: pre-wrap;
   word-wrap: break-word;
 }
+
+.pagination {
+  text-align: center;
+  padding: 1em;
+  margin: 1em 0;
+}
+
+.pagination a,
+.pagination strong,
+.pagination span {
+  display: inline-block;
+  padding: 0.5em 0.8em;
+  margin: 0 0.2em;
+  text-decoration: none;
+}
+
+.pagination a {
+  background-color: oldlace;
+  border: 1px solid tan;
+  color: sienna;
+}
+
+.pagination a:hover {
+  background-color: wheat;
+  text-decoration: none;
+}
+
+.pagination strong {
+  background-color: darkgoldenrod;
+  color: white;
+  border: 1px solid goldenrod;
+}
+
+.pagination span {
+  color: peru;
+}
