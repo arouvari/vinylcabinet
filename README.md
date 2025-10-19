@@ -68,6 +68,7 @@ This creates:
 
 Without database indexing:
 ![alt text](static/noindexing.png)
+
 With database indexing:
 ![alt text](static/indexing.png)
 
