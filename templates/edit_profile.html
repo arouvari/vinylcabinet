@@ -1,53 +1,39 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Edit Profile</title>
-</head>
-<body>
-  <h1>Edit Your Profile</h1>
+{% extends "base.html" %}
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <ul>
-      {% for category, message in messages %}
-        <li class="{{ category }}">{{ message }}</li>
+{% block content %}
+<h1>Edit Your Profile</h1>
+
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+
+  <p>
+    <label for="bio">Bio:</label><br>
+    <textarea id="bio" name="bio" rows="4" cols="50" maxlength="500">{{ profile.bio or '' }}</textarea>
+  </p>
+
+  <p>
+    <label for="location">Location:</label><br>
+    <input type="text" id="location" name="location" value="{{ profile.location or '' }}" maxlength="100">
+  </p>
+
+  <p>
+    <label for="profile_image_url">Profile Image URL:</label><br>
+    <input type="url" id="profile_image_url" name="profile_image_url" value="{{ profile.profile_image_url or '' }}">
+  </p>
+
+  <p>
+    <label for="favorite_genre">Favorite Genre:</label><br>
+    <select id="favorite_genre" name="favorite_genre">
+      <option value="">-- None --</option>
+      {% for genre in genres %}
+        <option value="{{ genre.id }}" {% if profile.favorite_genre_id == genre.id %}selected{% endif %}>
+          {{ genre.name }}
+        </option>
       {% endfor %}
-    </ul>
-  {% endif %}
-  {% endwith %}
+    </select>
+  </p>
 
-  <form method="POST">
-    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
-
-    <p>
-      <label for="bio">Bio:</label><br>
-      <textarea id="bio" name="bio" rows="4" cols="50" maxlength="500">{{ profile.bio or '' }}</textarea>
-    </p>
-
-    <p>
-      <label for="location">Location:</label><br>
-      <input type="text" id="location" name="location" value="{{ profile.location or '' }}" maxlength="100">
-    </p>
-
-    <p>
-      <label for="profile_image_url">Profile Image URL:</label><br>
-      <input type="url" id="profile_image_url" name="profile_image_url" value="{{ profile.profile_image_url or '' }}">
-    </p>
-
-    <p>
-      <label for="favorite_genre">Favorite Genre:</label><br>
-      <select id="favorite_genre" name="favorite_genre">
-        <option value="">-- None --</option>
-        {% for genre in genres %}
-          <option value="{{ genre.id }}" {% if profile.favorite_genre_id == genre.id %}selected{% endif %}>
-            {{ genre.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </p>
-
-    <button type="submit">Update Profile</button>
-    <a href="{{ url_for('user_page', username=session.username) }}">Cancel</a>
-  </form>
-</body>
-</html>
+  <button type="submit">Update Profile</button>
+  <a href="{{ url_for('user_page', username=session.username) }}">Cancel</a>
+</form>
+{% endblock %}

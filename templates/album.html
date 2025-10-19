@@ -1,74 +1,60 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ album['title'] }} - Details</title>
-</head>
-<body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <ul>
-        {% for category, message in messages %}
-            <li class="{{ category }}">{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}
-    {% endwith %}
+{% extends "base.html" %}
 
-    <h1>{{ album['title'] }} by {{ album['artist'] }} ({{ album['year'] }})</h1>
-    <p>Genres: {% for genre in album.genres %}{{ genre.name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
-    {% if album['image_url'] %}
-        <img src="{{ album['image_url'] }}" alt="Album cover for {{ album['title'] }} by {{ album['artist'] }}">
-    {% else %}
-        <img src="{{ url_for('static', filename='placeholder.jpg') }}" alt="No album cover available">
-    {% endif %}
-    <p>Average Rating: {% if avg_stars %}{{ '★' * (avg_stars | int) }}{{ '☆' * (5 - (avg_stars | int)) }}{% else %}No reviews yet{% endif %}</p>
+{% block content %}
+<h1>{{ album['title'] }} by {{ album['artist'] }} ({{ album['year'] }})</h1>
+<p>Genres: {% for genre in album.genres %}{{ genre.name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+{% if album['image_url'] %}
+    <img src="{{ album['image_url'] }}" alt="Album cover for {{ album['title'] }} by {{ album['artist'] }}">
+{% else %}
+    <img src="{{ url_for('static', filename='placeholder.jpg') }}" alt="No album cover available">
+{% endif %}
+<p>Average Rating: {% if avg_stars %}{{ '★' * (avg_stars | int) }}{{ '☆' * (5 - (avg_stars | int)) }}{% else %}No reviews yet{% endif %}</p>
 
-    <h2>Reviews</h2>
-    {% if reviews %}
-    <ul>
-        {% for review in reviews %}
-        <li>
-            <strong>
-                <a href="{{ url_for('user_page', username=review['username']) }}">
-                    {{ review['username'] }}
-                </a>
-            </strong>:
-            {{ '★' * review['stars'] }}{{ '☆' * (5 - review['stars']) }}<br>
-            {{ review['text'] }}<br>
-            <small>{{ review['created_at'] }}</small>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-        <p>No reviews yet.</p>
-    {% endif %}
+<h2>Reviews</h2>
+{% if reviews %}
+<ul>
+    {% for review in reviews %}
+    <li>
+        <strong>
+            <a href="{{ url_for('user_page', username=review['username']) }}">
+                {{ review['username'] }}
+            </a>
+        </strong>:
+        {{ '★' * review['stars'] }}{{ '☆' * (5 - review['stars']) }}<br>
+        <div class="user-text">{{ review['text'] }}</div>
+        <small>{{ review['created_at'] }}</small>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+    <p>No reviews yet.</p>
+{% endif %}
 
-    {% if session.username and not has_reviewed %}
-        <h2>Add Review</h2>
-        <form action="/review/{{ album['id'] }}" method="POST">
-            <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
-            <p>
-                <label for="stars">Stars (1-5):</label>
-                <select name="stars" id="stars" required>
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                </select>
-            </p>
-            <p>
-                <label for="text">Review Text:</label><br>
-                <textarea name="text" id="text" rows="4" cols="50" required></textarea>
-            </p>
-            <input type="submit" value="Submit Review">
-        </form>
-    {% elif session.username %}
-        <p>You have already reviewed this album.</p>
-    {% else %}
-        <p><a href="{{ url_for('login') }}?next={{ request.path }}">Log in</a> to add a review.</p>
-    {% endif %}
+{% if session.username and not has_reviewed %}
+    <h2>Add Review</h2>
+    <form action="/review/{{ album['id'] }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+        <p>
+            <label for="stars">Stars (1-5):</label>
+            <select name="stars" id="stars" required>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+        </p>
+        <p>
+            <label for="text">Review Text:</label><br>
+            <textarea name="text" id="text" rows="4" cols="50" required></textarea>
+        </p>
+        <input type="submit" value="Submit Review">
+    </form>
+{% elif session.username %}
+    <p>You have already reviewed this album.</p>
+{% else %}
+    <p><a href="{{ url_for('login') }}?next={{ request.path }}">Log in</a> to add a review.</p>
+{% endif %}
 
-    <a href="/">Back to Home</a>
-</body>
-</html>
+<a href="/">Back to Home</a>
+{% endblock %}

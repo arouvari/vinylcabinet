@@ -1,0 +1,244 @@
+body {
+  margin: auto;
+  max-width: 50em;
+  font-family: sans-serif;
+  background-color: antiquewhite;
+  padding: 1em;
+}
+
+nav {
+  background-color: saddlebrown;
+  padding: 1em;
+  margin: 0.5em 0;
+  text-align: center;
+}
+
+nav a {
+  color: wheat;
+  text-decoration: none;
+  padding: 0.5em 1em;
+  margin: 0 0.5em;
+}
+
+nav a:hover {
+  background-color: sienna;
+  color: white;
+}
+
+main {
+  background-color: cornsilk;
+  padding: 1em;
+  margin: 0.5em 0;
+  border: 2px solid tan;
+}
+
+h1 {
+  color: saddlebrown;
+  border-bottom: 2px solid tan;
+  padding-bottom: 0.5em;
+  margin: 0.5em 0;
+}
+
+h2 {
+  color: sienna;
+  margin: 1em 0 0.5em 0;
+}
+
+h3 {
+  color: peru;
+  margin: 0.5em 0;
+}
+
+.error {
+  background-color: mistyrose;
+  border: 2px solid crimson;
+  color: darkred;
+  padding: 1em;
+  margin: 0.5em 0;
+}
+
+.success {
+  background-color: honeydew;
+  border: 2px solid seagreen;
+  color: darkgreen;
+  padding: 1em;
+  margin: 0.5em 0;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+ul li {
+  background-color: linen;
+  border: 1px solid tan;
+  padding: 1em;
+  margin: 0.5em 0;
+}
+
+form {
+  background-color: oldlace;
+  border: 2px solid burlywood;
+  padding: 1em;
+  margin: 0.5em 0;
+}
+
+form[style*="inline"] {
+  display: inline;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+label {
+  font-weight: bold;
+  display: block;
+  margin-top: 0.5em;
+  color: saddlebrown;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="url"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.5em;
+  margin: 0.3em 0;
+  border: 1px solid tan;
+  background-color: white;
+}
+
+textarea {
+  min-height: 5em;
+}
+
+button,
+input[type="submit"] {
+  background-color: darkgoldenrod;
+  color: white;
+  padding: 0.7em 1.5em;
+  border: none;
+  margin-top: 0.5em;
+  cursor: pointer;
+}
+
+button:hover,
+input[type="submit"]:hover {
+  background-color: goldenrod;
+}
+
+a {
+  color: sienna;
+  text-decoration: none;
+}
+
+a:hover {
+  color: saddlebrown;
+  text-decoration: underline;
+}
+
+.album {
+  background-color: linen;
+  border: 2px solid burlywood;
+  padding: 1em;
+  margin: 0.5em 0;
+}
+
+.album img {
+  margin: 0.5em 0;
+  border: 1px solid tan;
+}
+
+.profile-header {
+  background-color: papayawhip;
+  border: 2px solid peru;
+  padding: 1em;
+  margin: 0.5em 0;
+}
+
+.profile-header img {
+  border-radius: 50%;
+  margin: 0.5em 0;
+  border: 3px solid sienna;
+}
+
+.stats {
+  background-color: wheat;
+  border: 2px solid burlywood;
+  padding: 1em;
+  margin: 0.5em 0;
+}
+
+.stats ul {
+  list-style-type: disc;
+  padding-left: 2em;
+}
+
+.stats li {
+  background-color: transparent;
+  border: none;
+  padding: 0.2em 0;
+  margin: 0;
+  color: saddlebrown;
+}
+
+.recent-activity {
+  background-color: lavenderblush;
+  border: 2px solid rosybrown;
+  padding: 1em;
+  margin: 0.5em 0;
+}
+
+.recent-activity ul {
+  list-style-type: disc;
+  padding-left: 2em;
+}
+
+.recent-activity li {
+  background-color: transparent;
+  border: none;
+  padding: 0.2em 0;
+  margin: 0;
+}
+
+fieldset {
+  border: 2px solid tan;
+  padding: 0.5em;
+  margin: 0.5em 0;
+  background-color: oldlace;
+}
+
+legend {
+  font-weight: bold;
+  padding: 0 0.5em;
+  color: saddlebrown;
+}
+
+.errors {
+  background-color: mistyrose;
+  border: 2px solid crimson;
+  padding: 1em;
+  margin: 0.5em 0;
+}
+
+.errors li {
+  background-color: transparent;
+  border: none;
+  padding: 0.2em 0;
+  margin: 0;
+  color: darkred;
+}
+
+.review-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.user-text {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

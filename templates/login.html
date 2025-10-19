@@ -1,35 +1,20 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
-  <title>Login</title>
-</head>
+{% block content %}
+<h1>Login</h1>
 
-<body>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <ul>
-        {% for category, message in messages %}
-          <li class="{{ category }}">{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-    {% endwith %}
-    <h1>Login</h1>
-  <form action="/login" method="post">
-    <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
-    <input type="hidden" name="next_page" value="{{ next_page or '/' }}" />
-    <p>
-      <label for="username">Username:</label><br />
-      <input type="text" id="username" name="username" required />
-    </p>
-    <p>
-      <label for="password">Password:</label><br />
-      <input type="password" id="password" name="password" required />
-    </p>
-    <input type="submit" value="Login" />
-    <a href="/">Home</a>
-  </form>
-</body>
-
-</html>
+<form action="/login" method="post">
+  <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+  <input type="hidden" name="next_page" value="{{ next_page or '/' }}" />
+  <p>
+    <label for="username">Username:</label><br />
+    <input type="text" id="username" name="username" required />
+  </p>
+  <p>
+    <label for="password">Password:</label><br />
+    <input type="password" id="password" name="password" required />
+  </p>
+  <input type="submit" value="Login" />
+  <a href="/">Home</a>
+</form>
+{% endblock %}
