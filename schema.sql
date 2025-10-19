@@ -61,3 +61,16 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 
 INSERT OR IGNORE INTO genres (name) VALUES
     ('Rock'), ('Pop'), ('Jazz'), ('Hip-Hop'), ('Classical'), ('Electronic'), ('Metal');
+
+CREATE INDEX IF NOT EXISTS idx_albums_user_id ON albums(user_id);
+CREATE INDEX IF NOT EXISTS idx_albums_title ON albums(title);
+CREATE INDEX IF NOT EXISTS idx_albums_artist ON albums(artist);
+CREATE INDEX IF NOT EXISTS idx_albums_year ON albums(year);
+CREATE INDEX IF NOT EXISTS idx_reviews_album_id ON reviews(album_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_stars ON reviews(stars);
+CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+CREATE INDEX IF NOT EXISTS idx_favorites_album_id ON favorites(album_id);
+CREATE INDEX IF NOT EXISTS idx_album_genres_album_id ON album_genres(album_id);
+CREATE INDEX IF NOT EXISTS idx_album_genres_genre_id ON album_genres(genre_id);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_favorite_genre ON user_profiles(favorite_genre_id);
