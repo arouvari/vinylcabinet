@@ -14,9 +14,9 @@ db.execute("DELETE FROM user_profiles")
 db.execute("DELETE FROM albums")
 db.execute("DELETE FROM users")
 
-USER_COUNT = 100
-ALBUM_COUNT = 1000
-REVIEW_COUNT = 5000
+USER_COUNT = 10000
+ALBUM_COUNT = 100000
+REVIEW_COUNT = 500000
 
 for i in range(1, USER_COUNT + 1):
     db.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)",
