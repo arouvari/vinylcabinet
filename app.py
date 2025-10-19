@@ -119,12 +119,13 @@ def index():
     query_text = request.args.get("query", "").strip()
     user_id = session.get("user_id")
     page = request.args.get("page", 1, type=int)
+    sort = request.args.get("sort", "newest")
     per_page = 20
 
     albums, total_albums = (
-        database.search_albums(query_text, user_id, page, per_page)
+        database.search_albums(query_text, user_id, page, per_page, sort)
         if query_text
-        else database.get_all_albums(user_id, page, per_page)
+        else database.get_all_albums(user_id, page, per_page, sort)
     )
 
     total_pages = (total_albums + per_page - 1) // per_page
@@ -148,7 +149,8 @@ def index():
         albums=albums,
         query=query_text,
         page=page,
-        total_pages=total_pages
+        total_pages=total_pages,
+        sort=sort
     )
 
 @app.route("/add", methods=["GET", "POST"])

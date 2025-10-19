@@ -83,7 +83,19 @@ def validate_album_data(data):
         errors["genres"] = "At least one genre is required."
     return errors
 
-def search_albums(query_text, user_id=None, page=1, per_page=20):
+def get_sort_clause(sort):
+    """Returns the ORDER BY clause based on sort parameter."""
+    sort_options = {
+        'newest': 'a.id DESC',
+        'oldest': 'a.id ASC',
+        'title': 'a.title ASC',
+        'artist': 'a.artist ASC',
+        'year': 'a.year DESC',
+        'rating': 'avg_rating DESC, a.id DESC'
+    }
+    return sort_options.get(sort, 'a.id DESC')
+
+def search_albums(query_text, user_id=None, page=1, per_page=20, sort='newest'):
     """
     Searches albums based on title, artist, or genre.
     """
@@ -116,15 +128,18 @@ def search_albums(query_text, user_id=None, page=1, per_page=20):
     total = query(count_sql, params)[0]['total']
 
     offset = (page - 1) * per_page
+    order_by = get_sort_clause(sort)
+
     sql = f"""
         SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, a.user_id,
-               u.username AS owner_username
+               u.username AS owner_username,
+               (SELECT AVG(stars) FROM reviews WHERE album_id = a.id) as avg_rating
         FROM albums a
         JOIN users u ON a.user_id = u.id
         LEFT JOIN album_genres ag ON a.id = ag.album_id
         LEFT JOIN genres g ON ag.genre_id = g.id
         WHERE {where_clause}
-        ORDER BY a.id DESC
+        ORDER BY {order_by}
         LIMIT ? OFFSET ?
     """
 
@@ -134,7 +149,7 @@ def search_albums(query_text, user_id=None, page=1, per_page=20):
         album['genres'] = get_album_genres(album['id'])
     return albums, total
 
-def get_all_albums(user_id=None, page=1, per_page=20):
+def get_all_albums(user_id=None, page=1, per_page=20, sort='newest'):
     """
     Fetches all albums with pagination.
     """
@@ -142,13 +157,16 @@ def get_all_albums(user_id=None, page=1, per_page=20):
     total = query(count_sql)[0]['total']
 
     offset = (page - 1) * per_page
-    sql = """
+    order_by = get_sort_clause(sort)
+
+    sql = f"""
         SELECT DISTINCT a.id, a.title, a.artist, a.year, a.image_url, a.user_id,
-               u.username AS owner_username
+               u.username AS owner_username,
+               (SELECT AVG(stars) FROM reviews WHERE album_id = a.id) as avg_rating
         FROM albums a
         JOIN users u ON a.user_id = u.id
         LEFT JOIN album_genres ag ON a.id = ag.album_id
-        ORDER BY a.id DESC
+        ORDER BY {order_by}
         LIMIT ? OFFSET ?
     """
     rows = query(sql, (per_page, offset))
